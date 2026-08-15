@@ -1,0 +1,554 @@
+"use strict";
+const Combat = {
+  groups: [], phase: "input", sub: "action", inputIdx: 0, actions: [],
+  msgs: [], round: 0, xpTotal: 0, opts: {}, pendingSpell: null,
+  chest: null, worker: 0,
+
+  // ------------------------------------------------------------ setup
+  start(opts) {
+    this.opts = opts || {};
+    const map = LEVELS[Game.maze.level];
+    this.groups = [];
+    if (this.opts.boss) {
+      this.addGroup("APPRENTICE", 1);
+      this.addGroup("MAGE5", d(2));
+    } else {
+      this.addGroup(pickWeighted(map.table));
+      const extra = this.opts.lair ? 100 : [0, 25, 40, 55][map.depth];
+      if (pct(extra)) this.addGroup(pickWeighted(map.table));
+      if (map.depth >= 3 && pct(20)) this.addGroup(pickWeighted(map.table));
+    }
+    for (const ch of Game.party) { ch.tempAC = 0; ch.asleep = false; ch.parry = false; }
+    this.round = 0; this.xpTotal = 0; this.msgs = [];
+    const names = this.groups.map(g => this.groupLabel(g)).join(" and ");
+    UI.log(`You encounter ${names}!`);
+    this.surprised = false; this.surprising = false;
+    if (!this.opts.boss) {
+      const r = rnd(100);
+      if (r < 15) { this.surprising = true; UI.log("You surprise them!"); }
+      else if (r < 25) { this.surprised = true; UI.log("You are surprised!"); }
+    }
+    Game.go(CombatScreen);
+    if (this.surprised) { this.actions = []; this.resolveRound(); }
+    else this.beginInput();
+  },
+  addGroup(id, count) {
+    const def = MONSTERS[id];
+    const n = count || dice(def.num);
+    this.groups.push({
+      def, silenced: false, acMod: 0,
+      members: Array.from({ length: n }, () => ({ hp: dice(def.hp), asleep: false, para: false })),
+    });
+  },
+  aliveIn(g) { return g.members.filter(m => m.hp > 0); },
+  aliveGroups() { return this.groups.filter(g => this.aliveIn(g).length > 0); },
+  groupLabel(g) {
+    const n = this.aliveIn(g).length;
+    return `${n} ${n === 1 ? g.def.name : g.def.pl}`;
+  },
+
+  // ------------------------------------------------------------ input phase
+  beginInput() {
+    this.phase = "input"; this.sub = "action"; this.actions = []; this.inputIdx = 0;
+    for (const ch of Game.party) ch.parry = false;
+    this.skipToNextActor();
+    this.draw();
+  },
+  currentChar() { return Game.party[this.inputIdx]; },
+  skipToNextActor() {
+    while (this.inputIdx < Game.party.length) {
+      const ch = Game.party[this.inputIdx];
+      if (isUp(ch) && !ch.asleep) break;
+      this.inputIdx++;
+    }
+    if (this.inputIdx >= Game.party.length) this.resolveRound();
+  },
+  meleeGroups() { return this.aliveGroups().slice(0, 2); },
+  combatSpells(ch) {
+    return knownSpells(ch).filter(s => SPELLS[s].where === "combat" || SPELLS[s].where === "any");
+  },
+  potions(ch) { return ch.items.map((it, i) => ({ it, i })).filter(o => ITEMS[o.it.id].slot === "potion"); },
+
+  draw() {
+    const m = Game.maze;
+    Render.draw(LEVELS[m.level], m.x, m.y, m.f, 3);
+    UI.viewLabel("*** COMBAT ***");
+    if (this.phase === "msg") {
+      UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n<span class="k">[ SPACE ]</span>`);
+      return;
+    }
+    if (this.phase === "chest") { this.drawChest(); return; }
+    const enemies = this.groups.map((g, i) => {
+      const n = this.aliveIn(g).length;
+      const status = n === 0 ? ' <span class="dim">(slain)</span>' : g.members.some(mm => mm.hp > 0 && (mm.asleep || mm.para)) ? ' <span class="k">(incapacitated)</span>' : "";
+      return `  ${i + 1}) ${n === 0 ? '<span class="dim">' : ""}${this.groupLabel(g)}${n === 0 ? "</span>" : ""}${status}`;
+    }).join("\n");
+    const ch = this.currentChar();
+    let prompt = "";
+    if (this.sub === "action") {
+      const canMelee = this.inputIdx < 3;
+      prompt = `<span class="hi">${esc(ch.name)}</span>'s options:\n` +
+        (canMelee ? `${UI.key("F", "Fight")}  ` : `<span class="dim">F) Fight (back row)</span>  `) +
+        `${UI.key("P", "Parry")}  ${UI.key("S", "Spell")}  ${UI.key("U", "Use potion")}  ${UI.key("R", "Run")}  ${UI.key("T", "Take back")}`;
+    } else if (this.sub === "fightGroup") {
+      prompt = `<span class="hi">${esc(ch.name)}</span> fights which group? <span class="k">(1-${this.meleeGroups().length})</span>`;
+    } else if (this.sub === "spell") {
+      const list = this.combatSpells(ch);
+      prompt = `<span class="hi">${esc(ch.name)}</span> casts...\n` + (list.map((s, i) => {
+        const def = SPELLS[s];
+        const can = ch.sp[def.book][def.sl - 1] > 0;
+        const lab = `${pad(s, 10)} <span class="dim">${esc(def.desc)}</span>`;
+        return can ? UI.key(LETTERS[i], lab) : `<span class="dim">${LETTERS[i]}) ${lab}</span>`;
+      }).join("\n") || '<span class="dim">(no combat spells)</span>') + `\n${UI.key("L", "Back")}`;
+    } else if (this.sub === "spellGroup") {
+      prompt = `${this.pendingSpell} at which group? <span class="k">(1-${this.groups.length})</span>`;
+    } else if (this.sub === "spellAlly" || this.sub === "potionAlly") {
+      prompt = `On which member? <span class="k">(1-${Game.party.length})</span>`;
+    } else if (this.sub === "potion") {
+      const pots = this.potions(ch);
+      prompt = `Drink which?\n` + (pots.map((o, i) => UI.key(LETTERS[i], ITEMS[o.it.id].name)).join("\n") || '<span class="dim">(no potions)</span>') + `\n${UI.key("L", "Back")}`;
+    }
+    UI.panel(`<h2>COMBAT — ROUND ${this.round + 1}</h2>${enemies}\n\n${prompt}`);
+  },
+
+  key(k, e) {
+    if (this.phase === "msg") {
+      if (k === " " || e.key === "Enter" || e.key === " ") this.afterMsgs();
+      return;
+    }
+    if (this.phase === "chest") { this.chestKey(k, e); return; }
+    const ch = this.currentChar();
+    if (this.sub === "action") {
+      if (k === "f" && this.inputIdx < 3) {
+        const mg = this.meleeGroups();
+        if (mg.length > 1) { this.sub = "fightGroup"; this.draw(); }
+        else { this.actions.push({ ch, type: "fight", group: mg[0] }); this.advance(); }
+      } else if (k === "p") { ch.parry = true; this.actions.push({ ch, type: "parry" }); this.advance(); }
+      else if (k === "s") { this.sub = "spell"; this.draw(); }
+      else if (k === "u") { this.sub = "potion"; this.draw(); }
+      else if (k === "r") { this.actions.push({ ch, type: "run" }); this.resolveRound(); }
+      else if (k === "t") this.beginInput();
+      return;
+    }
+    if (this.sub === "fightGroup") {
+      const i = parseInt(k, 10) - 1;
+      const mg = this.meleeGroups();
+      if (i >= 0 && i < mg.length) { this.actions.push({ ch, type: "fight", group: mg[i] }); this.advance(); }
+      return;
+    }
+    if (this.sub === "spell") {
+      if (k === "l") { this.sub = "action"; this.draw(); return; }
+      const list = this.combatSpells(ch);
+      const idx = LETTERS.indexOf(k);
+      if (idx >= 0 && idx < list.length) {
+        const name = list[idx];
+        const def = SPELLS[name];
+        if (ch.sp[def.book][def.sl - 1] <= 0) return;
+        this.pendingSpell = name;
+        if (def.target === "group" || def.target === "foe") {
+          if (this.aliveGroups().length > 1) { this.sub = "spellGroup"; this.draw(); }
+          else { this.actions.push({ ch, type: "spell", spell: name, group: this.aliveGroups()[0] }); this.advance(); }
+        } else if (def.target === "ally") { this.sub = "spellAlly"; this.draw(); }
+        else { this.actions.push({ ch, type: "spell", spell: name }); this.advance(); }
+      }
+      return;
+    }
+    if (this.sub === "spellGroup") {
+      const i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < this.groups.length && this.aliveIn(this.groups[i]).length) {
+        this.actions.push({ ch, type: "spell", spell: this.pendingSpell, group: this.groups[i] });
+        this.advance();
+      }
+      return;
+    }
+    if (this.sub === "spellAlly") {
+      const i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < Game.party.length) {
+        this.actions.push({ ch, type: "spell", spell: this.pendingSpell, ally: Game.party[i] });
+        this.advance();
+      }
+      return;
+    }
+    if (this.sub === "potion") {
+      if (k === "l") { this.sub = "action"; this.draw(); return; }
+      const pots = this.potions(ch);
+      const idx = LETTERS.indexOf(k);
+      if (idx >= 0 && idx < pots.length) {
+        this.pendingSpell = pots[idx].it.id;
+        this.sub = "potionAlly"; this.draw();
+      }
+      return;
+    }
+    if (this.sub === "potionAlly") {
+      const i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < Game.party.length) {
+        this.actions.push({ ch, type: "potion", itemId: this.pendingSpell, ally: Game.party[i] });
+        this.advance();
+      }
+    }
+  },
+  advance() { this.sub = "action"; this.inputIdx++; this.skipToNextActor(); if (this.phase === "input") this.draw(); },
+
+  // ------------------------------------------------------------ resolution
+  say(m) { this.msgs.push(m); },
+  resolveRound() {
+    this.phase = "resolving";
+    this.round++;
+    this.msgs = [];
+    const actors = [];
+    for (const a of this.actions) {
+      actors.push({ side: "p", init: d(8) + Math.floor(a.ch.stats.AGI / 3) + (this.surprising ? 20 : 0), a });
+    }
+    if (!this.surprising) {
+      this.groups.forEach(g => {
+        g.members.forEach(mm => {
+          if (mm.hp > 0) actors.push({ side: "m", init: d(8) + g.def.lvl, g, mm });
+        });
+      });
+    }
+    actors.sort((x, y) => y.init - x.init);
+    let fled = false;
+    for (const act of actors) {
+      if (this.aliveGroups().length === 0) break;
+      if (!Game.party.some(isUp)) break;
+      if (act.side === "p") {
+        if (!isUp(act.a.ch) || act.a.ch.asleep) continue;
+        if (act.a.type === "run") {
+          if (pct(55 + statMod(act.a.ch.stats.AGI) * 10)) { fled = true; this.say("You flee the battle!"); break; }
+          else this.say("You cannot escape!");
+        } else this.partyAct(act.a);
+      } else {
+        if (act.mm.hp <= 0 || act.mm.asleep || act.mm.para) continue;
+        this.monsterAct(act.g, act.mm);
+      }
+    }
+    this.surprising = false; this.surprised = false;
+    // wake-up rolls
+    for (const g of this.groups) for (const mm of g.members) {
+      if (mm.hp > 0 && mm.asleep && pct(40)) { mm.asleep = false; }
+    }
+    for (const ch of Game.party) if (ch.asleep && pct(50)) { ch.asleep = false; this.say(`${ch.name} wakes up.`); }
+    UI.renderParty();
+    if (fled) { this.msgs.push("", "You escape without reward."); this.endTo = "maze"; }
+    else if (!Game.party.some(isUp)) { this.endTo = "wipe"; }
+    else if (this.aliveGroups().length === 0) { this.endTo = "victory"; }
+    else this.endTo = "next";
+    this.phase = "msg";
+    if (!this.msgs.length) this.msgs.push("(a tense standoff...)");
+    this.draw();
+  },
+  afterMsgs() {
+    if (this.endTo === "next") { this.beginInput(); return; }
+    if (this.endTo === "wipe") { partyWipe(); return; }
+    if (this.endTo === "maze") { this.finish(); return; }
+    if (this.endTo === "victory") { this.victory(); return; }
+    if (this.endTo === "chestDone") { this.finish(); return; }
+  },
+  finish() {
+    for (const ch of Game.party) { ch.tempAC = 0; ch.asleep = false; ch.parry = false; }
+    Game.save();
+    Game.go(MazeScreen);
+  },
+
+  partyAct(a) {
+    const ch = a.ch;
+    if (a.type === "parry") return;
+    if (a.type === "potion") {
+      const idx = ch.items.findIndex(it => it.id === a.itemId);
+      if (idx >= 0) { this.say(`${ch.name} drinks a ${ITEMS[a.itemId].name}.`); this.potionEffect(ch, a.ally, idx); }
+      return;
+    }
+    if (a.type === "spell") { this.castCombatSpell(ch, a.spell, a); return; }
+    // fight
+    let g = a.group;
+    if (this.aliveIn(g).length === 0) g = this.meleeGroups()[0];
+    if (!g) return;
+    const swings = numAttacks(ch);
+    let kills = 0, dmgTotal = 0, hits = 0;
+    for (let s = 0; s < swings; s++) {
+      const targets = this.aliveIn(g);
+      if (!targets.length) break;
+      const mm = pick(targets);
+      const effAC = g.def.ac + g.acMod;
+      const asleep = mm.asleep || mm.para;
+      const roll = d(20);
+      const need = clamp(20 - atkBonus(ch) - effAC - (asleep ? 8 : 0), 2, 20);
+      if (roll >= need || roll === 20) {
+        let dmg = Math.max(1, dice(weaponDmg(ch)) + statMod(ch.stats.STR));
+        if (asleep) dmg *= 2;
+        if (ch.cls === "Ninja" && pct(2 * ch.level)) { dmg = mm.hp; this.say(`${ch.name} decapitates one!`); }
+        mm.hp -= dmg; hits++; dmgTotal += dmg;
+        if (mm.asleep && pct(50)) mm.asleep = false;
+        if (mm.hp <= 0) { mm.hp = 0; kills++; this.xpTotal += g.def.xp; }
+      }
+    }
+    if (!hits) this.say(`${ch.name} swings at a ${g.def.name} and misses.`);
+    else this.say(`${ch.name} hits a ${g.def.name} for ${dmgTotal}${kills ? ` — ${kills} slain!` : "."}`);
+  },
+  potionEffect(user, target, idx) {
+    const def = ITEMS[user.items[idx].id];
+    if (def.use === "heal") {
+      const amt = dice(def.dice);
+      target.hp = Math.min(target.maxhp, target.hp + amt);
+      this.say(`${target.name} is healed ${amt} points.`);
+    } else if (def.use === "curepoison" && target.status === "POISONED") {
+      target.status = "OK"; this.say(`${target.name} is cured of poison.`);
+    }
+    user.items.splice(idx, 1);
+  },
+  castCombatSpell(ch, name, a) {
+    const def = SPELLS[name];
+    if (ch.sp[def.book][def.sl - 1] <= 0) return;
+    ch.sp[def.book][def.sl - 1]--;
+    this.say(`${ch.name} casts ${name}!`);
+    let g = a.group;
+    if (g && this.aliveIn(g).length === 0) g = this.aliveGroups()[0];
+    if (def.kind === "damage") {
+      if (!g) return;
+      if (def.target === "foe") {
+        const mm = pick(this.aliveIn(g));
+        const dmg = dice(def.dice);
+        mm.hp -= dmg;
+        this.say(`A ${g.def.name} takes ${dmg}${mm.hp <= 0 ? " and dies!" : "."}`);
+        if (mm.hp <= 0) { mm.hp = 0; this.xpTotal += g.def.xp; }
+      } else {
+        let kills = 0, total = 0;
+        for (const mm of this.aliveIn(g)) {
+          const dmg = dice(def.dice);
+          mm.hp -= dmg; total += dmg;
+          if (mm.hp <= 0) { mm.hp = 0; kills++; this.xpTotal += g.def.xp; }
+        }
+        this.say(`The ${g.def.pl} are engulfed! (${total} dmg${kills ? `, ${kills} slain` : ""})`);
+      }
+    } else if (def.kind === "sleep" || def.kind === "paralyze") {
+      if (!g) return;
+      let got = 0;
+      for (const mm of this.aliveIn(g)) {
+        const chance = clamp(75 - (g.def.sleepResist || (g.def.undead ? 100 : 0)) - g.def.lvl * 5, 0, 90);
+        if (pct(chance)) { if (def.kind === "sleep") mm.asleep = true; else mm.para = true; got++; }
+      }
+      this.say(got ? `${got} of the ${g.def.pl} ${def.kind === "sleep" ? "fall asleep!" : "freeze in place!"}` : "The spell has no effect!");
+    } else if (def.kind === "silence") {
+      if (!g) return;
+      if (pct(70)) { g.silenced = true; this.say(`The ${g.def.pl} are silenced!`); }
+      else this.say("The spell fizzles.");
+    } else if (def.kind === "acfoe") {
+      if (!g) return;
+      g.acMod += def.amt;
+      this.say(`The ${g.def.pl} are easier to hit!`);
+    } else if (def.kind === "acself") {
+      ch.tempAC = (ch.tempAC || 0) + def.amt;
+      this.say(`${ch.name} shimmers with protection.`);
+    } else if (def.kind === "acparty") {
+      for (const p of Game.party) p.tempAC = (p.tempAC || 0) + def.amt;
+      this.say("The party is shielded!");
+    } else if (def.kind === "heal") {
+      const t = a.ally || ch;
+      const amt = dice(def.dice);
+      t.hp = Math.min(t.maxhp, t.hp + amt);
+      this.say(`${t.name} is healed ${amt} points.`);
+    } else if (def.kind === "light") {
+      Game.maze.light = (Game.maze.light || 0) + def.amt;
+      this.say("Light floods the corridor.");
+    } else if (def.kind === "cureparalyze" || def.kind === "curepoison") {
+      const t = a.ally || ch;
+      const want = def.kind === "curepoison" ? "POISONED" : "PARALYZED";
+      if (t.status === want) { t.status = "OK"; this.say(`${t.name} recovers!`); }
+      else this.say("Nothing happens.");
+    } else if (def.kind === "locate") {
+      const m = Game.maze;
+      this.say(`You are at (${m.x} E, ${m.y} S) on level ${m.level}.`);
+    }
+  },
+
+  monsterAct(g, mm) {
+    const def = g.def;
+    const front = Game.party.slice(0, 3).filter(isUp);
+    const anyUp = Game.party.filter(isUp);
+    if (!anyUp.length) return;
+    const targetPool = front.length ? front : anyUp;
+    // spellcasters
+    if ((def.mage || def.priest) && !g.silenced && pct(50)) {
+      if (def.mage >= 3 && pct(50)) {
+        this.say(`A ${def.name} casts MAHALITO!`);
+        for (const ch of anyUp) {
+          let dmg = dice("4d6");
+          if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
+          this.hurt(ch, dmg, `is scorched for ${dmg}`);
+        }
+      } else if (def.mage && pct(40)) {
+        this.say(`A ${def.name} casts KATINO!`);
+        for (const ch of front) if (!ch.asleep && pct(45)) { ch.asleep = true; this.say(`${ch.name} falls asleep!`); }
+      } else {
+        const t = pick(targetPool);
+        const isPriest = !!def.priest;
+        const dmg = dice(isPriest ? (def.priest >= 2 ? "2d8" : "1d8") : "1d8");
+        this.say(`A ${def.name} casts ${isPriest ? (def.priest >= 2 ? "BADIAL" : "BADIOS") : "HALITO"}!`);
+        this.hurt(t, dmg, `takes ${dmg}`);
+      }
+      return;
+    }
+    if (def.breath && pct(40)) {
+      this.say(`The ${def.name} breathes fire!`);
+      for (const ch of anyUp) {
+        let dmg = Math.max(1, Math.ceil(mm.hp / 2));
+        if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
+        this.hurt(ch, dmg, `is burned for ${dmg}`);
+      }
+      return;
+    }
+    // melee
+    const ch = pick(targetPool);
+    const helpless = ch.asleep || ch.status === "PARALYZED";
+    let total = 0, hits = 0;
+    for (const dd of def.dmg) {
+      const effAC = acOf(ch) - (ch.parry ? 2 : 0) + (helpless ? 8 : 0);
+      const roll = d(20);
+      const need = clamp(20 - def.lvl - effAC, 2, 20);
+      if (roll >= need || roll === 20) { hits++; total += dice(dd); }
+    }
+    if (!hits) { this.say(`A ${def.name} lunges at ${ch.name} and misses.`); return; }
+    this.hurt(ch, total, `is hit for ${total}`);
+    if (ch.hp > 0) {
+      if (def.poison && pct(30) && ch.status === "OK") { ch.status = "POISONED"; this.say(`${ch.name} is poisoned!`); }
+      if (def.paralyze && pct(30) && (ch.status === "OK" || ch.status === "POISONED")) { ch.status = "PARALYZED"; this.say(`${ch.name} is paralyzed!`); }
+      if (ch.asleep && pct(60)) ch.asleep = false;
+    }
+  },
+  hurt(ch, dmg, verb) {
+    ch.hp -= dmg;
+    if (ch.hp <= 0) {
+      ch.hp = 0;
+      ch.status = "DEAD";
+      ch.asleep = false;
+      this.say(`${ch.name} ${verb}... and DIES!`);
+    } else this.say(`${ch.name} ${verb}.`);
+  },
+
+  // ------------------------------------------------------------ victory & chests
+  victory() {
+    const alive = Game.party.filter(isUp);
+    const share = Math.floor(this.xpTotal / Math.max(1, alive.length));
+    const map = LEVELS[Game.maze.level];
+    const gold = dice("2d10") * map.depth * 5;
+    const gshare = Math.floor(gold / Math.max(1, alive.length));
+    for (const ch of alive) { ch.xp += share; ch.gold += gshare; }
+    this.msgs = [`VICTORY!`, `Each survivor earns ${share} XP and ${gshare} gold.`];
+    if (this.opts.boss) {
+      Game.flags.boss = true;
+      this.msgs.push("", "The Apprentice falls! Something glitters in the chamber beyond...");
+    }
+    for (const ch of alive) {
+      const ups = ch.xp >= xpForLevel(ch.cls, ch.level + 1);
+      if (ups) this.msgs.push(`${ch.name} is ready for a level (rest at the Inn).`);
+    }
+    UI.renderParty();
+    if (this.opts.lair || this.opts.boss || pct(40)) {
+      this.phase = "msg"; this.endTo = "chest"; this.msgs.push("", "The monsters were guarding a CHEST!");
+      const oldAfter = this.afterMsgs.bind(this);
+      this.afterMsgs = () => { this.afterMsgs = oldAfter; this.openChestUI(); };
+    } else {
+      this.phase = "msg"; this.endTo = "chestDone";
+    }
+    this.draw();
+  },
+  openChestUI() {
+    const traps = ["POISON NEEDLE", "GAS BOMB", "CROSSBOW BOLT", "EXPLODING BOX", "ALARM"];
+    this.chest = { trap: pct(70) ? pick(traps) : null, revealed: null, done: false };
+    this.worker = Math.max(0, Game.party.findIndex(isUp));
+    this.phase = "chest";
+    this.draw();
+  },
+  drawChest() {
+    const ch = Game.party[this.worker];
+    UI.viewLabel("*** A CHEST ***");
+    const rev = this.chest.revealed ? `\nInspection says: <span class="k">${this.chest.revealed}</span>` : "";
+    UI.panel(`<h2>A CHEST!</h2>\nWorking on it: <span class="hi">${esc(ch ? ch.name : "?")}</span> <span class="dim">(press 1-${Game.party.length} to change)</span>${rev}\n\n${UI.key("O", "Open it")}\n${UI.key("I", "Inspect for traps")}\n${UI.key("C", "Cast CALFO")}\n${UI.key("D", "Disarm trap")}\n${UI.key("L", "Leave it")}`);
+  },
+  chestKey(k) {
+    if (this.chest.done) return;
+    const n = parseInt(k, 10) - 1;
+    if (n >= 0 && n < Game.party.length && isUp(Game.party[n])) { this.worker = n; this.draw(); return; }
+    const ch = Game.party[this.worker];
+    const c = this.chest;
+    if (k === "l") { UI.log("You leave the chest untouched."); this.finish(); return; }
+    if (k === "i") {
+      if (pct(10) && c.trap) { this.triggerTrap(ch); return; }
+      const chance = clamp(40 + ch.stats.AGI * 2 + (ch.cls === "Thief" ? 30 : 0), 5, 95);
+      if (pct(chance)) c.revealed = c.trap || "NO TRAP — it seems safe";
+      else c.revealed = pct(50) ? "NO TRAP — it seems safe" : pick(["POISON NEEDLE", "GAS BOMB", "CROSSBOW BOLT", "EXPLODING BOX", "ALARM"]);
+      this.draw(); return;
+    }
+    if (k === "c") {
+      const priest = Game.party.find(p => isUp(p) && p.sp.priest[1] > 0 && knownSpells(p).includes("CALFO"));
+      if (!priest) { UI.log("No one can cast CALFO."); return; }
+      priest.sp.priest[1]--;
+      UI.log(`${priest.name} casts CALFO.`);
+      c.revealed = pct(95) ? (c.trap || "NO TRAP — it seems safe") : "NO TRAP — it seems safe";
+      UI.renderParty(); this.draw(); return;
+    }
+    if (k === "d") {
+      if (!c.trap) { UI.log("Click... there was no trap. The chest opens!"); this.loot(ch); return; }
+      const map = LEVELS[Game.maze.level];
+      const chance = clamp(30 + ch.stats.AGI * 2 + ch.level * 3 + (ch.cls === "Thief" ? 30 : 0) - map.depth * 5, 5, 95);
+      if (pct(chance)) { UI.log(`${ch.name} disarms the ${c.trap}!`); this.loot(ch); }
+      else if (pct(40)) this.triggerTrap(ch);
+      else { UI.log(`${ch.name} fumbles but nothing happens.`); this.draw(); }
+      return;
+    }
+    if (k === "o") {
+      if (c.trap) this.triggerTrap(ch);
+      else { UI.log("The chest creaks open!"); this.loot(ch); }
+    }
+  },
+  triggerTrap(ch) {
+    const c = this.chest;
+    const map = LEVELS[Game.maze.level];
+    UI.log(`*SNAP* — ${c.trap || "a trap"}!`);
+    const t = c.trap;
+    c.trap = null;
+    if (t === "POISON NEEDLE") {
+      if (ch.status === "OK") { ch.status = "POISONED"; UI.log(`${ch.name} is poisoned!`); }
+    } else if (t === "GAS BOMB") {
+      for (const p of Game.party) if (isUp(p) && pct(50) && p.status === "OK") { p.status = "POISONED"; UI.log(`${p.name} is poisoned!`); }
+    } else if (t === "CROSSBOW BOLT") {
+      this.trapHurt(ch, dice("1d6") * map.depth);
+    } else if (t === "EXPLODING BOX") {
+      for (const p of Game.party) if (isUp(p)) this.trapHurt(p, dice("1d8") * Math.max(1, map.depth - 1));
+    } else if (t === "ALARM") {
+      UI.log("An alarm rings through the maze!");
+      UI.renderParty();
+      Combat.start({});
+      return;
+    }
+    UI.renderParty();
+    if (!Game.party.some(isUp)) { partyWipe(); return; }
+    this.loot(ch);
+  },
+  trapHurt(ch, dmg) {
+    ch.hp -= dmg;
+    if (ch.hp <= 0) { ch.hp = 0; ch.status = "DEAD"; UI.log(`${ch.name} takes ${dmg} and DIES!`); }
+    else UI.log(`${ch.name} takes ${dmg} damage!`);
+  },
+  loot(ch) {
+    this.chest.done = true;
+    const map = LEVELS[Game.maze.level];
+    const gold = dice("3d10") * 10 * map.depth;
+    const alive = Game.party.filter(isUp);
+    const share = Math.floor(gold / Math.max(1, alive.length));
+    for (const p of alive) p.gold += share;
+    UI.log(`The chest holds ${gold} gold! (${share} each)`);
+    if (pct(35)) {
+      const id = pick(LOOT_TABLE[map.depth]);
+      ch.items.push({ id, eq: false });
+      UI.log(`${ch.name} finds: ${ITEMS[id].name}!`);
+    }
+    UI.renderParty();
+    this.finish();
+  },
+};
+
+const CombatScreen = {
+  draw() { Combat.draw(); },
+  key(k, e) { Combat.key(k, e); },
+};

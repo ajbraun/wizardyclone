@@ -1,0 +1,50 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  color: #d8ffd8;
+  font-family: "Menlo", "Courier New", monospace;
+  font-size: 14px;
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  user-select: none;
+}
+#game { width: 984px; }
+#top { display: flex; gap: 8px; }
+#viewwrap { position: relative; }
+#view { border: 2px solid #4a8a4a; background: #000; display: block; }
+#viewlabel {
+  position: absolute; top: 4px; left: 8px;
+  color: #7fbf7f; font-size: 12px; letter-spacing: 2px;
+}
+#panel {
+  flex: 1;
+  border: 2px solid #4a8a4a;
+  padding: 10px 14px;
+  min-height: 396px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+  overflow-y: auto;
+  max-height: 396px;
+}
+#log {
+  border: 2px solid #4a8a4a;
+  border-top: none;
+  height: 132px;
+  padding: 6px 14px;
+  overflow: hidden;
+  line-height: 1.4;
+  color: #b8e8b8;
+}
+#party { border: 2px solid #4a8a4a; border-top: none; padding: 4px 10px; }
+#party table { width: 100%; border-collapse: collapse; }
+#party td, #party th { text-align: left; padding: 1px 8px; font-size: 14px; }
+#party th { color: #7fbf7f; font-weight: normal; letter-spacing: 1px; }
+h2 { color: #fff; font-size: 16px; letter-spacing: 3px; margin-bottom: 8px; font-weight: normal; }
+.k { color: #ffe066; }
+.dim { color: #5a7a5a; }
+.hi { color: #ffffff; }
+.bad { color: #ff7070; }
+.gold { color: #ffd700; }
+.cursor { background: #2a4a2a; }
+.title-art { color: #9fdf9f; line-height: 1.15; font-size: 13px; white-space: pre; }
