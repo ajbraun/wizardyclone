@@ -106,6 +106,10 @@ const MONSTERS = {
   MAGE5:     { name: "Lvl 5 Mage", pl: "Lvl 5 Mages", lvl: 5, hp: "5d4", ac: 8, dmg: ["1d6"], num: "1d2", xp: 750, mage: 3 },
   APPRENTICE:{ name: "Werdna's Apprentice", pl: "Werdna's Apprentices", lvl: 7, hp: "8d8+16", ac: 2, dmg: ["2d8", "2d8"], num: "1", xp: 3200, mage: 3, sleepResist: 100, boss: true },
 };
+// ---------------------------------------------------------------- skills
+// Registry of skill definitions (populated in phase 3). Characters store
+// {id, level, uses}; effects contribute through the mod() pipeline.
+const SKILLS = {};
 // cumulative XP needed to reach a level
 function xpForLevel(cls, level) {
   if (level <= 1) return 0;

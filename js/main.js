@@ -1,44 +1,59 @@
 "use strict";
-const SAVE_KEY = "wizardy_save_v1";
+const SAVE_KEY = "wizardy_save_v2";
+const SAVE_KEY_V1 = "wizardy_save_v1";
 const Game = {
-  roster: [], party: [], maze: null, flags: {}, state: null,
+  roster: [], party: [], maze: null, flags: {}, counters: {}, state: null,
   go(screen) {
     this.state = screen;
     if (screen.enter) screen.enter();
     screen.draw();
     UI.renderParty();
   },
+  count(key, n) { this.counters[key] = (this.counters[key] || 0) + (n === undefined ? 1 : n); },
   save() {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
+        version: 2,
         roster: this.roster,
         party: this.party.map(c => c.id),
         maze: this.maze,
         flags: this.flags,
+        counters: this.counters,
         nextId: _charId,
       }));
     } catch (e) { /* private mode etc. */ }
   },
   load() {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
+      const raw = localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_KEY_V1);
       if (!raw) return false;
       const data = JSON.parse(raw);
       this.roster = data.roster || [];
+      // migrate older saves: default any fields added since
+      for (const ch of this.roster) {
+        if (!ch.skills) ch.skills = [];
+      }
       this.party = (data.party || []).map(id => this.roster.find(c => c.id === id)).filter(Boolean);
       this.maze = data.maze || null;
       this.flags = data.flags || {};
+      this.counters = data.counters || {};
       _charId = data.nextId || (Math.max(0, ...this.roster.map(c => c.id)) + 1);
       return true;
     } catch (e) { return false; }
   },
-  hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } },
+  hasSave() {
+    try { return !!(localStorage.getItem(SAVE_KEY) || localStorage.getItem(SAVE_KEY_V1)); }
+    catch (e) { return false; }
+  },
   newGame() {
-    this.roster = []; this.party = []; this.maze = null; this.flags = {};
+    this.roster = []; this.party = []; this.maze = null; this.flags = {}; this.counters = {};
     _charId = 1;
-    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_KEY_V1); } catch (e) {}
+    Events.emit("newGame", {});
   },
 };
+// every event increments a persistent counter — raw material for achievements
+Events.onAny((type) => Game.count("e:" + type));
 
 const TitleScreen = {
   draw() {

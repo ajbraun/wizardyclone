@@ -1,10 +1,11 @@
 "use strict";
 // ---------------------------------------------------------------- helpers
 function partyGold() { return Game.party.reduce((a, c) => a + c.gold, 0); }
-function spendPartyGold(amt) {
+function spendPartyGold(amt, src) {
   for (const ch of Game.party) {
     const take = Math.min(ch.gold, amt);
-    ch.gold -= take; amt -= take;
+    if (take > 0) spendGold(ch, take, src || "party");
+    amt -= take;
     if (amt <= 0) break;
   }
 }
@@ -172,14 +173,14 @@ function usePotion(user, target, itemIdx) {
   const entry = user.items[itemIdx];
   const def = ITEMS[entry.id];
   if (def.use === "heal") {
-    const amt = dice(def.dice);
-    target.hp = Math.min(target.maxhp, target.hp + amt);
+    const amt = applyHeal(target, dice(def.dice), { type: "potion" });
     UI.log(`${target.name} is healed ${amt} points.`);
   } else if (def.use === "curepoison") {
     if (target.status === "POISONED") target.status = "OK";
     UI.log(`${target.name} is cured of poison.`);
   }
   user.items.splice(itemIdx, 1);
+  Events.emit("potion", { ch: user, target, id: entry.id });
 }
 
 // ---------------------------------------------------------------- training grounds
@@ -308,6 +309,7 @@ function makeCreateScreen() {
         if (i >= 0 && i < elig.length) {
           const ch = newChar(this.name, this.race, this.align, this.stats, elig[i]);
           Game.roster.push(ch);
+          Events.emit("create", { ch });
           UI.log(`${ch.name} the ${ch.align} ${ch.race} ${ch.cls} is created! (HP ${ch.maxhp})`);
           Game.save();
           Game.go(TrainingScreen);
@@ -370,10 +372,11 @@ const ShopScreen = {
         const id = SHOP_STOCK[idx];
         const it = ITEMS[id];
         if (ch.gold < it.price) { UI.log('"You can\'t afford that," says Boltac.'); return; }
-        ch.gold -= it.price;
+        spendGold(ch, it.price, "shop");
         const entry = { id, eq: false };
         if (it.slot !== "potion" && canUseItem(ch, id) && !equipped(ch, it.slot)) entry.eq = true;
         ch.items.push(entry);
+        Events.emit("buy", { ch, id, price: it.price });
         UI.log(`${ch.name} buys the ${it.name}.${entry.eq ? " (equipped)" : ""}`);
         Game.save();
         UI.renderParty(); this.draw();
@@ -381,10 +384,12 @@ const ShopScreen = {
     } else if (this.mode === "sell") {
       const i = parseInt(k, 10) - 1;
       if (i >= 0 && i < ch.items.length) {
-        const def = ITEMS[ch.items[i].id];
-        ch.gold += Math.floor(def.price / 2);
+        const id = ch.items[i].id;
+        const def = ITEMS[id];
+        grantGold(ch, Math.floor(def.price / 2), "sell");
         UI.log(`Boltac buys the ${def.name} for ${Math.floor(def.price / 2)} gold.`);
         ch.items.splice(i, 1);
+        Events.emit("sell", { ch, id });
         UI.renderParty(); this.draw();
       }
     }
@@ -425,18 +430,25 @@ const TempleScreen = {
       if (k === "y") {
         const ch = this.sel; this.sel = null;
         const c = this.cost(ch);
+        const was = ch.status;
         if (partyGold() < c) { UI.log('"The gods require a proper donation," intones the priest.'); this.draw(); return; }
-        spendPartyGold(c);
+        spendPartyGold(c, "temple");
         if (ch.status === "POISONED" || ch.status === "PARALYZED") {
           ch.status = "OK";
           UI.log(`${ch.name} is cured!`);
+          Events.emit("temple", { ch, service: was, ok: true });
         } else if (ch.status === "DEAD") {
-          if (pct(50 + ch.stats.VIT * 3)) { ch.status = "OK"; ch.hp = 1; UI.log(`${ch.name} rises! DI has granted life!`); }
+          const ok = pct(50 + ch.stats.VIT * 3);
+          Events.emit("temple", { ch, service: was, ok });
+          if (ok) { ch.status = "OK"; ch.hp = 1; UI.log(`${ch.name} rises! DI has granted life!`); Events.emit("resurrect", { ch, from: was }); }
           else { ch.status = "ASHES"; UI.log(`The ritual fails... ${ch.name} crumbles to ASHES!`); }
         } else if (ch.status === "ASHES") {
-          if (pct(40 + ch.stats.VIT * 3)) { ch.status = "OK"; ch.hp = 1; UI.log(`KADORTO! ${ch.name} is restored to life!`); }
+          const ok = pct(40 + ch.stats.VIT * 3);
+          Events.emit("temple", { ch, service: was, ok });
+          if (ok) { ch.status = "OK"; ch.hp = 1; UI.log(`KADORTO! ${ch.name} is restored to life!`); Events.emit("resurrect", { ch, from: was }); }
           else {
             UI.log(`${ch.name} is LOST forever...`);
+            Events.emit("lost", { ch });
             Game.roster = Game.roster.filter(o => o !== ch);
             const pi = Game.party.indexOf(ch);
             if (pi >= 0) Game.party.splice(pi, 1);
@@ -464,7 +476,8 @@ const InnScreen = {
   },
   rest(full, cost) {
     if (partyGold() < cost) { UI.log('"No gold, no bed," says the innkeeper.'); return; }
-    spendPartyGold(cost);
+    spendPartyGold(cost, "inn");
+    Events.emit("rest", { full, cost });
     const msgs = [];
     for (const ch of Game.party) {
       if (!isUp(ch)) continue;

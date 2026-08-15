@@ -27,14 +27,17 @@ const MazeScreen = {
       if (spc.t === "up" && m.level === 1) {
         Game.maze = null;
         UI.log("Your party emerges into the daylight of the castle.");
+        Events.emit("surface", {});
         Game.save();
         Game.go(CastleScreen);
       } else if (spc.t === "up" || spc.t === "down") {
         Game.maze = { level: spc.dest.level, x: spc.dest.x, y: spc.dest.y, f: spc.dest.f, light: m.light };
         UI.log(spc.t === "down" ? `You descend to level ${spc.dest.level}...` : `You climb to level ${spc.dest.level}.`);
+        Events.emit(spc.t === "down" ? "descend" : "ascend", { to: spc.dest.level });
         this.draw();
       } else if (spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
         Game.flags.won = true;
+        Events.emit("won", {});
         UI.log("*** You take the JEWELED AMULET OF THE OVERLORD! ***");
         UI.log("Return to the castle in triumph!");
         Game.save();
@@ -46,16 +49,16 @@ const MazeScreen = {
     const m = Game.maze;
     const map = LEVELS[m.level];
     const w = cellWalls(map, m.x, m.y)[m.f];
-    if (w === 1) { UI.log("*OUCH* You walk into a wall."); return; }
-    if (w === 2) UI.log("You push open the door...");
+    if (w === 1) { UI.log("*OUCH* You walk into a wall."); Events.emit("bump", { level: m.level }); return; }
+    if (w === 2) { UI.log("You push open the door..."); Events.emit("door", { level: m.level }); }
     m.x += DIRS[m.f].dx;
     m.y += DIRS[m.f].dy;
     if (m.light > 0) m.light--;
+    Events.emit("step", { level: m.level, x: m.x, y: m.y });
     // poison ticks
     for (const ch of Game.party) {
       if (ch.status === "POISONED" && ch.hp > 0) {
-        ch.hp--;
-        if (ch.hp <= 0) { ch.hp = 0; ch.status = "DEAD"; UI.log(`${ch.name} succumbs to poison!`); }
+        if (applyDamage(ch, 1, { type: "poison" })) UI.log(`${ch.name} succumbs to poison!`);
       }
     }
     UI.renderParty();
@@ -95,6 +98,7 @@ function partyWipe() {
   for (const ch of Game.party) {
     if (ch.status === "OK" || ch.status === "POISONED" || ch.status === "PARALYZED") ch.status = "DEAD";
   }
+  Events.emit("wipe", { party: Game.party.slice(), level: Game.maze ? Game.maze.level : 0 });
   UI.log("*** YOUR PARTY HAS BEEN ANNIHILATED ***");
   UI.log("Days later, a search party drags the bodies back to the Temple of Cant.");
   Game.party = [];
@@ -106,7 +110,7 @@ function partyWipe() {
 // ---------------------------------------------------------------- camp
 const CampScreen = {
   mode: "menu", caster: null, spell: null, order: null,
-  enter() { this.mode = "menu"; this.caster = null; this.spell = null; },
+  enter() { this.mode = "menu"; this.caster = null; this.spell = null; Events.emit("camp", {}); },
   draw() {
     UI.viewLabel("CAMP");
     if (this.mode === "menu") {
@@ -193,10 +197,10 @@ function castCampSpell(ch, name, target) {
   const def = SPELLS[name];
   ch.sp[def.book][def.sl - 1]--;
   UI.log(`${ch.name} casts ${name}!`);
+  Events.emit("spell", { ch, name, combat: false });
   if (def.kind === "heal") {
     if (!target || !isUp(target)) { UI.log("Nothing happens."); return finishCast(); }
-    const amt = dice(def.dice);
-    target.hp = Math.min(target.maxhp, target.hp + amt);
+    const amt = applyHeal(target, dice(def.dice), { type: "spell", name });
     UI.log(`${target.name} is healed ${amt} points.`);
   } else if (def.kind === "light") {
     Game.maze.light = (Game.maze.light || 0) + def.amt;

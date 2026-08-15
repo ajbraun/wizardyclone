@@ -22,6 +22,7 @@ const Combat = {
     this.round = 0; this.xpTotal = 0; this.msgs = [];
     const names = this.groups.map(g => this.groupLabel(g)).join(" and ");
     UI.log(`You encounter ${names}!`);
+    Events.emit("encounter", { groups: this.groups.map(g => g.def), boss: !!this.opts.boss, lair: !!this.opts.lair, level: Game.maze.level });
     this.surprised = false; this.surprising = false;
     if (!this.opts.boss) {
       const r = rnd(100);
@@ -214,7 +215,9 @@ const Combat = {
       if (act.side === "p") {
         if (!isUp(act.a.ch) || act.a.ch.asleep) continue;
         if (act.a.type === "run") {
-          if (pct(55 + statMod(act.a.ch.stats.AGI) * 10)) { fled = true; this.say("You flee the battle!"); break; }
+          const ok = pct(55 + statMod(act.a.ch.stats.AGI) * 10 + mod(act.a.ch, "runChance"));
+          Events.emit("flee", { ch: act.a.ch, ok });
+          if (ok) { fled = true; this.say("You flee the battle!"); break; }
           else this.say("You cannot escape!");
         } else this.partyAct(act.a);
       } else {
@@ -264,6 +267,7 @@ const Combat = {
     if (this.aliveIn(g).length === 0) g = this.meleeGroups()[0];
     if (!g) return;
     const swings = numAttacks(ch);
+    const ctx = { vs: g.def };
     let kills = 0, dmgTotal = 0, hits = 0;
     for (let s = 0; s < swings; s++) {
       const targets = this.aliveIn(g);
@@ -272,35 +276,44 @@ const Combat = {
       const effAC = g.def.ac + g.acMod;
       const asleep = mm.asleep || mm.para;
       const roll = d(20);
-      const need = clamp(20 - atkBonus(ch) - effAC - (asleep ? 8 : 0), 2, 20);
-      if (roll >= need || roll === 20) {
-        let dmg = Math.max(1, dice(weaponDmg(ch)) + statMod(ch.stats.STR));
+      const need = clamp(20 - atkBonus(ch, ctx) - effAC - (asleep ? 8 : 0), 2, 20);
+      const landed = roll >= need || roll === 20;
+      let dmg = 0, slain = false;
+      if (landed) {
+        dmg = Math.max(1, dice(weaponDmg(ch)) + statMod(ch.stats.STR) + Math.floor(mod(ch, "dmg", ctx)));
         if (asleep) dmg *= 2;
         if (ch.cls === "Ninja" && pct(2 * ch.level)) { dmg = mm.hp; this.say(`${ch.name} decapitates one!`); }
         mm.hp -= dmg; hits++; dmgTotal += dmg;
         if (mm.asleep && pct(50)) mm.asleep = false;
-        if (mm.hp <= 0) { mm.hp = 0; kills++; this.xpTotal += g.def.xp; }
+        if (mm.hp <= 0) {
+          mm.hp = 0; kills++; slain = true;
+          this.xpTotal += g.def.xp;
+          Events.emit("kill", { by: ch, monster: g.def, sleeping: asleep, how: "melee" });
+        }
       }
+      Events.emit("swing", { ch, monster: g.def, hit: landed, dmg, kill: slain, sleeping: asleep });
     }
     if (!hits) this.say(`${ch.name} swings at a ${g.def.name} and misses.`);
     else this.say(`${ch.name} hits a ${g.def.name} for ${dmgTotal}${kills ? ` — ${kills} slain!` : "."}`);
   },
   potionEffect(user, target, idx) {
-    const def = ITEMS[user.items[idx].id];
+    const id = user.items[idx].id;
+    const def = ITEMS[id];
     if (def.use === "heal") {
-      const amt = dice(def.dice);
-      target.hp = Math.min(target.maxhp, target.hp + amt);
+      const amt = applyHeal(target, dice(def.dice), { type: "potion" });
       this.say(`${target.name} is healed ${amt} points.`);
     } else if (def.use === "curepoison" && target.status === "POISONED") {
       target.status = "OK"; this.say(`${target.name} is cured of poison.`);
     }
     user.items.splice(idx, 1);
+    Events.emit("potion", { ch: user, target, id });
   },
   castCombatSpell(ch, name, a) {
     const def = SPELLS[name];
     if (ch.sp[def.book][def.sl - 1] <= 0) return;
     ch.sp[def.book][def.sl - 1]--;
     this.say(`${ch.name} casts ${name}!`);
+    Events.emit("spell", { ch, name, combat: true });
     let g = a.group;
     if (g && this.aliveIn(g).length === 0) g = this.aliveGroups()[0];
     if (def.kind === "damage") {
@@ -310,13 +323,19 @@ const Combat = {
         const dmg = dice(def.dice);
         mm.hp -= dmg;
         this.say(`A ${g.def.name} takes ${dmg}${mm.hp <= 0 ? " and dies!" : "."}`);
-        if (mm.hp <= 0) { mm.hp = 0; this.xpTotal += g.def.xp; }
+        if (mm.hp <= 0) {
+          mm.hp = 0; this.xpTotal += g.def.xp;
+          Events.emit("kill", { by: ch, monster: g.def, how: "spell", spell: name });
+        }
       } else {
         let kills = 0, total = 0;
         for (const mm of this.aliveIn(g)) {
           const dmg = dice(def.dice);
           mm.hp -= dmg; total += dmg;
-          if (mm.hp <= 0) { mm.hp = 0; kills++; this.xpTotal += g.def.xp; }
+          if (mm.hp <= 0) {
+            mm.hp = 0; kills++; this.xpTotal += g.def.xp;
+            Events.emit("kill", { by: ch, monster: g.def, how: "spell", spell: name });
+          }
         }
         this.say(`The ${g.def.pl} are engulfed! (${total} dmg${kills ? `, ${kills} slain` : ""})`);
       }
@@ -344,8 +363,7 @@ const Combat = {
       this.say("The party is shielded!");
     } else if (def.kind === "heal") {
       const t = a.ally || ch;
-      const amt = dice(def.dice);
-      t.hp = Math.min(t.maxhp, t.hp + amt);
+      const amt = applyHeal(t, dice(def.dice), { type: "spell", name });
       this.say(`${t.name} is healed ${amt} points.`);
     } else if (def.kind === "light") {
       Game.maze.light = (Game.maze.light || 0) + def.amt;
@@ -374,7 +392,7 @@ const Combat = {
         for (const ch of anyUp) {
           let dmg = dice("4d6");
           if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
-          this.hurt(ch, dmg, `is scorched for ${dmg}`);
+          this.hurt(ch, dmg, `is scorched for ${dmg}`, { type: "monsterSpell", monster: def });
         }
       } else if (def.mage && pct(40)) {
         this.say(`A ${def.name} casts KATINO!`);
@@ -384,7 +402,7 @@ const Combat = {
         const isPriest = !!def.priest;
         const dmg = dice(isPriest ? (def.priest >= 2 ? "2d8" : "1d8") : "1d8");
         this.say(`A ${def.name} casts ${isPriest ? (def.priest >= 2 ? "BADIAL" : "BADIOS") : "HALITO"}!`);
-        this.hurt(t, dmg, `takes ${dmg}`);
+        this.hurt(t, dmg, `takes ${dmg}`, { type: "monsterSpell", monster: def });
       }
       return;
     }
@@ -393,7 +411,7 @@ const Combat = {
       for (const ch of anyUp) {
         let dmg = Math.max(1, Math.ceil(mm.hp / 2));
         if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
-        this.hurt(ch, dmg, `is burned for ${dmg}`);
+        this.hurt(ch, dmg, `is burned for ${dmg}`, { type: "breath", monster: def });
       }
       return;
     }
@@ -408,21 +426,17 @@ const Combat = {
       if (roll >= need || roll === 20) { hits++; total += dice(dd); }
     }
     if (!hits) { this.say(`A ${def.name} lunges at ${ch.name} and misses.`); return; }
-    this.hurt(ch, total, `is hit for ${total}`);
+    this.hurt(ch, total, `is hit for ${total}`, { type: "melee", monster: def });
     if (ch.hp > 0) {
       if (def.poison && pct(30) && ch.status === "OK") { ch.status = "POISONED"; this.say(`${ch.name} is poisoned!`); }
       if (def.paralyze && pct(30) && (ch.status === "OK" || ch.status === "POISONED")) { ch.status = "PARALYZED"; this.say(`${ch.name} is paralyzed!`); }
       if (ch.asleep && pct(60)) ch.asleep = false;
     }
   },
-  hurt(ch, dmg, verb) {
-    ch.hp -= dmg;
-    if (ch.hp <= 0) {
-      ch.hp = 0;
-      ch.status = "DEAD";
-      ch.asleep = false;
-      this.say(`${ch.name} ${verb}... and DIES!`);
-    } else this.say(`${ch.name} ${verb}.`);
+  hurt(ch, dmg, verb, src) {
+    const died = applyDamage(ch, dmg, src || { type: "combat" });
+    if (died) this.say(`${ch.name} ${verb}... and DIES!`);
+    else this.say(`${ch.name} ${verb}.`);
   },
 
   // ------------------------------------------------------------ victory & chests
@@ -432,7 +446,11 @@ const Combat = {
     const map = LEVELS[Game.maze.level];
     const gold = dice("2d10") * map.depth * 5;
     const gshare = Math.floor(gold / Math.max(1, alive.length));
-    for (const ch of alive) { ch.xp += share; ch.gold += gshare; }
+    for (const ch of alive) {
+      ch.xp += Math.floor(share * (100 + mod(ch, "xpGain")) / 100);
+      grantGold(ch, Math.floor(gshare * (100 + mod(ch, "goldGain")) / 100), "combat");
+    }
+    Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level });
     this.msgs = [`VICTORY!`, `Each survivor earns ${share} XP and ${gshare} gold.`];
     if (this.opts.boss) {
       Game.flags.boss = true;
@@ -471,10 +489,11 @@ const Combat = {
     if (n >= 0 && n < Game.party.length && isUp(Game.party[n])) { this.worker = n; this.draw(); return; }
     const ch = Game.party[this.worker];
     const c = this.chest;
-    if (k === "l") { UI.log("You leave the chest untouched."); this.finish(); return; }
+    if (k === "l") { UI.log("You leave the chest untouched."); Events.emit("chest", { action: "leave", ch }); this.finish(); return; }
     if (k === "i") {
+      Events.emit("chest", { action: "inspect", ch });
       if (pct(10) && c.trap) { this.triggerTrap(ch); return; }
-      const chance = clamp(40 + ch.stats.AGI * 2 + (ch.cls === "Thief" ? 30 : 0), 5, 95);
+      const chance = clamp(40 + ch.stats.AGI * 2 + (ch.cls === "Thief" ? 30 : 0) + mod(ch, "inspect"), 5, 95);
       if (pct(chance)) c.revealed = c.trap || "NO TRAP — it seems safe";
       else c.revealed = pct(50) ? "NO TRAP — it seems safe" : pick(["POISON NEEDLE", "GAS BOMB", "CROSSBOW BOLT", "EXPLODING BOX", "ALARM"]);
       this.draw(); return;
@@ -488,15 +507,21 @@ const Combat = {
       UI.renderParty(); this.draw(); return;
     }
     if (k === "d") {
+      Events.emit("chest", { action: "disarm", ch });
       if (!c.trap) { UI.log("Click... there was no trap. The chest opens!"); this.loot(ch); return; }
       const map = LEVELS[Game.maze.level];
-      const chance = clamp(30 + ch.stats.AGI * 2 + ch.level * 3 + (ch.cls === "Thief" ? 30 : 0) - map.depth * 5, 5, 95);
-      if (pct(chance)) { UI.log(`${ch.name} disarms the ${c.trap}!`); this.loot(ch); }
+      const chance = clamp(30 + ch.stats.AGI * 2 + ch.level * 3 + (ch.cls === "Thief" ? 30 : 0) - map.depth * 5 + mod(ch, "disarm"), 5, 95);
+      if (pct(chance)) {
+        UI.log(`${ch.name} disarms the ${c.trap}!`);
+        Events.emit("trap", { type: c.trap, ch, disarmed: true });
+        this.loot(ch);
+      }
       else if (pct(40)) this.triggerTrap(ch);
       else { UI.log(`${ch.name} fumbles but nothing happens.`); this.draw(); }
       return;
     }
     if (k === "o") {
+      Events.emit("chest", { action: "open", ch });
       if (c.trap) this.triggerTrap(ch);
       else { UI.log("The chest creaks open!"); this.loot(ch); }
     }
@@ -507,6 +532,7 @@ const Combat = {
     UI.log(`*SNAP* — ${c.trap || "a trap"}!`);
     const t = c.trap;
     c.trap = null;
+    Events.emit("trap", { type: t, ch, triggered: true });
     if (t === "POISON NEEDLE") {
       if (ch.status === "OK") { ch.status = "POISONED"; UI.log(`${ch.name} is poisoned!`); }
     } else if (t === "GAS BOMB") {
@@ -526,8 +552,8 @@ const Combat = {
     this.loot(ch);
   },
   trapHurt(ch, dmg) {
-    ch.hp -= dmg;
-    if (ch.hp <= 0) { ch.hp = 0; ch.status = "DEAD"; UI.log(`${ch.name} takes ${dmg} and DIES!`); }
+    const died = applyDamage(ch, dmg, { type: "trap" });
+    if (died) UI.log(`${ch.name} takes ${dmg} and DIES!`);
     else UI.log(`${ch.name} takes ${dmg} damage!`);
   },
   loot(ch) {
@@ -536,13 +562,15 @@ const Combat = {
     const gold = dice("3d10") * 10 * map.depth;
     const alive = Game.party.filter(isUp);
     const share = Math.floor(gold / Math.max(1, alive.length));
-    for (const p of alive) p.gold += share;
+    for (const p of alive) grantGold(p, Math.floor(share * (100 + mod(p, "goldGain")) / 100), "chest");
     UI.log(`The chest holds ${gold} gold! (${share} each)`);
+    let itemId = null;
     if (pct(35)) {
-      const id = pick(LOOT_TABLE[map.depth]);
-      ch.items.push({ id, eq: false });
-      UI.log(`${ch.name} finds: ${ITEMS[id].name}!`);
+      itemId = pick(LOOT_TABLE[map.depth]);
+      ch.items.push({ id: itemId, eq: false });
+      UI.log(`${ch.name} finds: ${ITEMS[itemId].name}!`);
     }
+    Events.emit("loot", { ch, gold, item: itemId, level: Game.maze.level });
     UI.renderParty();
     this.finish();
   },
