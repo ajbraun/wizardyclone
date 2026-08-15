@@ -18,6 +18,18 @@ function mod(ch, key, ctx) {
 }
 // Diminishing returns for skill levels: level 1 = base, growth flattens fast.
 function skillBonus(base, level) { return base * Math.log2(level + 1); }
+// Crit chance in percent: small base + luck, boosted by skills/affixes via mod().
+// Capped so it stays a texture knob; crit doubles damage.
+function critChance(ch, ctx) {
+  return clamp(2 + Math.max(0, ch.stats.LUK - 9) + mod(ch, "crit", ctx), 0, 50);
+}
+// The world is absolute; rewards are relative. XP scales from the monster's
+// level vs yours: punching up pays a premium, punching down decays to nothing.
+function relXpMult(charLvl, monLvl) {
+  const diff = monLvl - charLvl;
+  if (diff >= 0) return Math.min(3, 1 + 0.2 * diff);
+  return Math.max(0.05, Math.pow(0.75, -diff));
+}
 // skills source: reads the SKILLS registry (populated in phase 3)
 registerModSource((ch, key, ctx) => {
   if (!ch.skills || !ch.skills.length) return 0;

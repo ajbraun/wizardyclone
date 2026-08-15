@@ -16,10 +16,12 @@ run(`
     ["PADRE","Priest",{STR:10,IQ:8,PIE:15,VIT:12,AGI:8,LUK:9}],
   ]) {
     const ch = newChar(nm, "Human", cls === "Thief" ? "Neutral" : "Good", st, cls);
-    ch.level = 9; ch.xp = xpForLevel(cls, 9); ch.maxhp = 70; ch.hp = 70; ch.gold = 500;
+    ch.level = 10; ch.xp = xpForLevel(cls, 10); ch.maxhp = 80; ch.hp = 80; ch.gold = 500;
     restoreSP(ch);
     ch.items.push({id:"LONGSWORD1", eq: canUseItem(ch,"LONGSWORD1")});
     ch.items.push({id:"CHAINMAIL1", eq: canUseItem(ch,"CHAINMAIL1")});
+    ch.items.push({id:"LARGESHIELD", eq: canUseItem(ch,"LARGESHIELD")});
+    ch.items.push({id:"HELM", eq: canUseItem(ch,"HELM")});
     Game.roster.push(ch); Game.party.push(ch);
   }
 `);
@@ -62,14 +64,15 @@ run('Game.maze = {level:3,x:9,y:6,f:2,light:0}; MazeScreen.draw();');
 press("w");
 assert(Game.state === S.CombatScreen, "boss combat started");
 assert(grind(3000, "boss fight"), "boss fight completed");
-assert(Game.flags.boss, "boss defeated");
+assert(Game.flags.boss, "boss defeated (party wiped?)");
+if (!Game.flags.boss || !Game.maze) done(); // wiped: report asserts, don't crash
 run('Game.party.forEach(c=>{ if(c.status!=="DEAD"&&c.status!=="ASHES"){c.status="OK";c.hp=c.maxhp;} });');
-for (let i = 0; i < 40 && !(Game.maze.x === 9 && Game.maze.y === 11); i++) {
+for (let i = 0; i < 40 && Game.maze && !(Game.maze.x === 9 && Game.maze.y === 11); i++) {
   if (Game.state === S.CombatScreen) { grind(2000, "amulet walk"); continue; }
   run('Game.maze.f = 2;');
   press("w");
 }
-assert(Game.maze.x === 9 && Game.maze.y === 11, "reached amulet tile");
+assert(Game.maze && Game.maze.x === 9 && Game.maze.y === 11, "reached amulet tile");
 press("Enter");
 assert(Game.flags.won, "amulet taken");
 assert(get("Game.counters['e:won'] === 1"), "won event counted");

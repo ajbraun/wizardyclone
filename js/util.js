@@ -11,6 +11,11 @@ function dice(s) {
   return Math.max(0, t);
 }
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function chance(p) { return Math.random() < p; } // p in 0..1
+// Smooth to-hit curve over delta = attack rating + target's descending AC - 9.
+// ~5%/point near parity (matches the old clamped d20 in the campaign band),
+// asymptotic to 5%/95% at the extremes so no bonus ever saturates to worthless.
+function hitChance(delta) { return 0.05 + 0.90 / (1 + Math.exp(-delta / 4)); }
 function pick(arr) { return arr[rnd(arr.length)]; }
 function pct(p) { return rnd(100) < p; }
 function pickWeighted(table) {

@@ -268,33 +268,33 @@ const Combat = {
     if (!g) return;
     const swings = numAttacks(ch);
     const ctx = { vs: g.def };
-    let kills = 0, dmgTotal = 0, hits = 0;
+    let kills = 0, dmgTotal = 0, hits = 0, crits = 0;
     for (let s = 0; s < swings; s++) {
       const targets = this.aliveIn(g);
       if (!targets.length) break;
       const mm = pick(targets);
       const effAC = g.def.ac + g.acMod;
       const asleep = mm.asleep || mm.para;
-      const roll = d(20);
-      const need = clamp(20 - atkBonus(ch, ctx) - effAC - (asleep ? 8 : 0), 2, 20);
-      const landed = roll >= need || roll === 20;
-      let dmg = 0, slain = false;
+      const delta = atkBonus(ch, ctx) + effAC - 9 + (asleep ? 8 : 0);
+      const landed = chance(hitChance(delta));
+      let dmg = 0, slain = false, crit = false;
       if (landed) {
         dmg = Math.max(1, dice(weaponDmg(ch)) + statMod(ch.stats.STR) + Math.floor(mod(ch, "dmg", ctx)));
         if (asleep) dmg *= 2;
+        if (chance(critChance(ch, ctx) / 100)) { crit = true; crits++; dmg *= 2; }
         if (ch.cls === "Ninja" && pct(2 * ch.level)) { dmg = mm.hp; this.say(`${ch.name} decapitates one!`); }
         mm.hp -= dmg; hits++; dmgTotal += dmg;
         if (mm.asleep && pct(50)) mm.asleep = false;
         if (mm.hp <= 0) {
           mm.hp = 0; kills++; slain = true;
           this.xpTotal += g.def.xp;
-          Events.emit("kill", { by: ch, monster: g.def, sleeping: asleep, how: "melee" });
+          Events.emit("kill", { by: ch, monster: g.def, sleeping: asleep, how: "melee", crit });
         }
       }
-      Events.emit("swing", { ch, monster: g.def, hit: landed, dmg, kill: slain, sleeping: asleep });
+      Events.emit("swing", { ch, monster: g.def, hit: landed, dmg, kill: slain, sleeping: asleep, crit });
     }
     if (!hits) this.say(`${ch.name} swings at a ${g.def.name} and misses.`);
-    else this.say(`${ch.name} hits a ${g.def.name} for ${dmgTotal}${kills ? ` — ${kills} slain!` : "."}`);
+    else this.say(`${ch.name} hits a ${g.def.name} for ${dmgTotal}${crits ? " *CRIT*" : ""}${kills ? ` — ${kills} slain!` : "."}`);
   },
   potionEffect(user, target, idx) {
     const id = user.items[idx].id;
@@ -421,9 +421,7 @@ const Combat = {
     let total = 0, hits = 0;
     for (const dd of def.dmg) {
       const effAC = acOf(ch) - (ch.parry ? 2 : 0) + (helpless ? 8 : 0);
-      const roll = d(20);
-      const need = clamp(20 - def.lvl - effAC, 2, 20);
-      if (roll >= need || roll === 20) { hits++; total += dice(dd); }
+      if (chance(hitChance(def.lvl + effAC - 9))) { hits++; total += dice(dd); }
     }
     if (!hits) { this.say(`A ${def.name} lunges at ${ch.name} and misses.`); return; }
     this.hurt(ch, total, `is hit for ${total}`, { type: "melee", monster: def });
@@ -443,15 +441,19 @@ const Combat = {
   victory() {
     const alive = Game.party.filter(isUp);
     const share = Math.floor(this.xpTotal / Math.max(1, alive.length));
+    const encLvl = Math.max(...this.groups.map(g => g.def.lvl));
     const map = LEVELS[Game.maze.level];
     const gold = dice("2d10") * map.depth * 5;
     const gshare = Math.floor(gold / Math.max(1, alive.length));
+    let anyScaled = false;
     for (const ch of alive) {
-      ch.xp += Math.floor(share * (100 + mod(ch, "xpGain")) / 100);
+      const mult = relXpMult(ch.level, encLvl);
+      if (mult < 0.999) anyScaled = true;
+      ch.xp += Math.floor(share * mult * (100 + mod(ch, "xpGain")) / 100);
       grantGold(ch, Math.floor(gshare * (100 + mod(ch, "goldGain")) / 100), "combat");
     }
-    Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level });
-    this.msgs = [`VICTORY!`, `Each survivor earns ${share} XP and ${gshare} gold.`];
+    Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level, encLvl });
+    this.msgs = [`VICTORY!`, `Spoils: ${share} XP each${anyScaled ? " (reduced — these were beneath you)" : ""} and ${gshare} gold.`];
     if (this.opts.boss) {
       Game.flags.boss = true;
       this.msgs.push("", "The Apprentice falls! Something glitters in the chamber beyond...");
