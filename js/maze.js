@@ -201,7 +201,7 @@ function castCampSpell(ch, name, target) {
   Events.emit("spell", { ch, name, combat: false });
   if (def.kind === "heal") {
     if (!target || !isUp(target)) { UI.log("Nothing happens."); return finishCast(); }
-    const amt = applyHeal(target, dice(def.dice), { type: "spell", name });
+    const amt = applyHeal(target, dice(def.dice) + Math.floor(mod(ch, "healPower")), { type: "spell", name });
     UI.log(`${target.name} is healed ${amt} points.`);
   } else if (def.kind === "light") {
     Game.maze.light = (Game.maze.light || 0) + def.amt;

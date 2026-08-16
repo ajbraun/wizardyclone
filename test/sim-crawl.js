@@ -125,4 +125,10 @@ const earned = get("Object.keys(Game.achievements)");
 console.log(`achievements earned organically: ${earned.length} (${earned.slice(0, 8).join(", ")}...)`);
 assert(earned.length >= 5, "crawl earned achievements organically");
 assert(earned.includes("FIRST_BLOOD"), "First Blood among them");
+// skills unlock organically too
+const skillCount = get("Game.roster.reduce((a, c) => a + c.skills.length, 0)");
+const skillNames = get("[...new Set(Game.roster.flatMap(c => c.skills.map(s => s.id)))]");
+console.log(`skills unlocked organically: ${skillCount} across the party (${skillNames.join(", ")})`);
+assert(skillCount > 0, "crawl unlocked skills organically");
+assert(get('Game.roster.some(c => c.skills.some(s => s.id === "DUNGEON_LEGS"))'), "Dungeon Legs earned by walking");
 done();

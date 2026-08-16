@@ -101,6 +101,7 @@ function newChar(name, race, align, stats, cls) {
     status: "OK",           // OK POISONED PARALYZED DEAD ASHES
     items: [],              // {id, eq}
     skills: [],             // {id, level, uses} — resolved against SKILLS registry
+    prog: {},               // pre-unlock skill progress {skillId: qualifying uses}
     sp: { mage: Array(7).fill(0), priest: Array(7).fill(0) },
   };
   ch.maxhp = Math.max(1, CLASSES[cls].hd + vitMod(stats.VIT));

@@ -56,6 +56,7 @@ const N1 = 5000;
 G.run(`
   for (let i = 0; i < ${N1}; i++) {
     __g.members.forEach(m => { m.hp = 5; m.asleep = false; m.para = false; });
+    __ch.skills = []; __ch.prog = {}; // rates must measure a skill-free baseline
     Combat.msgs = [];
     Combat.partyAct({ ch: __ch, type: "fight", group: __g });
   }
@@ -74,6 +75,7 @@ G.run(`
   __sw.length = 0;
   for (let i = 0; i < 3000; i++) {
     __g.members.forEach(m => { m.hp = 9; m.asleep = false; m.para = false; });
+    __ch.skills = [{ id: "__CRIT", level: 1, uses: 0 }]; __ch.prog = {};
     Combat.msgs = [];
     Combat.partyAct({ ch: __ch, type: "fight", group: __g });
   }
@@ -89,6 +91,7 @@ G.run(`
   var __mm = __g.members[0]; __mm.hp = 5;
   for (let i = 0; i < ${N1}; i++) {
     __ch.hp = 500; __ch.status = "OK";
+    __ch.skills = []; __ch.prog = {}; // Pain Tolerance would skew the measurement
     Combat.msgs = [];
     Combat.monsterAct(__g, __mm);
   }

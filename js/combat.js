@@ -320,7 +320,7 @@ const Combat = {
       if (!g) return;
       if (def.target === "foe") {
         const mm = pick(this.aliveIn(g));
-        const dmg = dice(def.dice);
+        const dmg = dice(def.dice) + Math.floor(mod(ch, "spellPower"));
         mm.hp -= dmg;
         this.say(`A ${g.def.name} takes ${dmg}${mm.hp <= 0 ? " and dies!" : "."}`);
         if (mm.hp <= 0) {
@@ -329,8 +329,9 @@ const Combat = {
         }
       } else {
         let kills = 0, total = 0;
+        const sp = Math.floor(mod(ch, "spellPower"));
         for (const mm of this.aliveIn(g)) {
-          const dmg = dice(def.dice);
+          const dmg = dice(def.dice) + sp;
           mm.hp -= dmg; total += dmg;
           if (mm.hp <= 0) {
             mm.hp = 0; kills++; this.xpTotal += g.def.xp;
@@ -363,7 +364,7 @@ const Combat = {
       this.say("The party is shielded!");
     } else if (def.kind === "heal") {
       const t = a.ally || ch;
-      const amt = applyHeal(t, dice(def.dice), { type: "spell", name });
+      const amt = applyHeal(t, dice(def.dice) + Math.floor(mod(ch, "healPower")), { type: "spell", name });
       this.say(`${t.name} is healed ${amt} points.`);
     } else if (def.kind === "light") {
       Game.maze.light = (Game.maze.light || 0) + def.amt;
@@ -423,7 +424,11 @@ const Combat = {
       const effAC = acOf(ch) - (ch.parry ? 2 : 0) + (helpless ? 8 : 0);
       if (chance(hitChance(def.lvl + effAC - 9))) { hits++; total += dice(dd); }
     }
-    if (!hits) { this.say(`A ${def.name} lunges at ${ch.name} and misses.`); return; }
+    if (!hits) {
+      this.say(`A ${def.name} lunges at ${ch.name} and misses.`);
+      Events.emit("dodge", { ch, monster: def });
+      return;
+    }
     this.hurt(ch, total, `is hit for ${total}`, { type: "melee", monster: def });
     if (ch.hp > 0) {
       if (def.poison && pct(30) && ch.status === "OK") { ch.status = "POISONED"; this.say(`${ch.name} is poisoned!`); }

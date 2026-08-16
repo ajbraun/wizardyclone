@@ -34,6 +34,7 @@ const Game = {
       // migrate older saves: default any fields added since
       for (const ch of this.roster) {
         if (!ch.skills) ch.skills = [];
+        if (!ch.prog) ch.prog = {};
       }
       this.party = (data.party || []).map(id => this.roster.find(c => c.id === id)).filter(Boolean);
       this.maze = data.maze || null;

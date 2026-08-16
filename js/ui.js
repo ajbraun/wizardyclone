@@ -67,12 +67,18 @@ const UI = (() => {
     const sps = ["mage", "priest"].filter(b => knownBooks(ch)[b])
       .map(b => `${b.toUpperCase()} SP: ${ch.sp[b].map((v, i) => maxSP(ch, b, i + 1) ? v : "-").join("/")}`)
       .join("\n");
+    const skills = (ch.skills || []).map(s => {
+      const def = SKILLS[s.id];
+      return `${def ? def.name : s.id} L${s.level}`;
+    }).join(", ");
     return `<span class="hi">${esc(ch.name)}</span>  L${ch.level} ${ch.align} ${esc(ch.race)} ${esc(ch.cls)}\n\n` +
       `${st}\n\n` +
       `HP ${ch.hp}/${ch.maxhp}   AC ${acOf(ch)}   STATUS ${ch.status}\n` +
       `XP ${ch.xp}  (next level: ${xpForLevel(ch.cls, ch.level + 1)})   <span class="gold">GOLD ${ch.gold}</span>\n\n` +
       (sps ? sps + "\n" : "") +
-      `SPELLS: ${esc(spellStr)}\n\nITEMS (* = equipped, # = can't use):\n${items}`;
+      `SPELLS: ${esc(spellStr)}\n` +
+      `SKILLS: ${esc(skills || "(none yet — the System is watching)")}\n\n` +
+      `ITEMS (* = equipped, # = can't use):\n${items}`;
   }
   return { panel, log, clearLog, key, renderParty, charSheet, viewLabel, toast };
 })();

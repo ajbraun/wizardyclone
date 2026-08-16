@@ -128,6 +128,12 @@ ach("RESTS_20", "Professional Napper", "e:rest", 20, "Rest at the inn 20 times",
   "Twenty stays. The innkeeper has stopped changing your sheets.", { gold: 100 });
 ach("WON", "Proving Grounds, Proven", "e:won", 1, "Recover the Amulet",
   "You did the thing. The realm is saved, pending sequel.", { gold: 2000, xp: 1000, title: "Provener" });
+ach("SKILL_1", "Latent Talent", "e:skillUnlock", 1, "Unlock a skill",
+  "Something clicked. Probably a joint, but the System will allow it.", { gold: 50 });
+ach("SKILLS_10", "Renaissance Crawler", "e:skillUnlock", 10, "Unlock 10 skills",
+  "Ten skills. A well-rounded individual, if the roundness is mostly scar tissue.", { gold: 300, title: "Renaissance Crawler" });
+ach("SKILLUP_25", "Practice Makes Painful", "e:skillUp", 25, "Gain 25 skill levels",
+  "Twenty-five skill-ups. Repetition is a teacher. A cruel, unlicensed teacher.", { gold: 250 });
 
 // -------------------------------------------------------------- wiring
 const Achievements = {
