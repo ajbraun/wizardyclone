@@ -9,7 +9,9 @@ function spendPartyGold(amt, src) {
     if (amt <= 0) break;
   }
 }
-const LETTERS = "abcdefghijklmnopqrst";
+// selection alphabet for lettered lists — deliberately no "l", it's reserved
+// for Leave/Back on every screen
+const LETTERS = "abcdefghijkmnopqrstu";
 
 // ---------------------------------------------------------------- castle
 const CastleScreen = {

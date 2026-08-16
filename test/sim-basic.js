@@ -32,7 +32,14 @@ press("l"); press("c"); press("g");
 press("a"); press("a"); press("a");
 press("l"); press("l");
 assert(get("Game.party.length") === 2, "party of 2");
-press("b"); press("b"); press("d"); press("l"); press("l");
+press("b"); press("b"); press("d"); // buy a long sword
+// regression: "l" is Back, never a list letter — Small Shield (12th item) sells via "m"
+run("Game.party[0].gold = 500");
+press("l");
+assert(get("ShopScreen.mode") === "menu", "'l' backs out of the buy list");
+press("b"); press("m");
+assert(get("Game.party[0].items.some(i => i.id === 'SMALLSHIELD')"), "12th stock item buyable via 'm'");
+press("l"); press("l");
 
 // wander until wipe or step budget
 press("e"); press("m");
