@@ -22,13 +22,14 @@ const CastleScreen = {
     if (Game.flags.won) {
       extra = `\n<span class="gold">*** The Amulet has been returned! The realm is saved. ***</span>\n<span class="dim">(You may keep adventuring for glory.)</span>\n`;
     }
-    UI.panel(`<h2>CASTLE</h2>${extra}\n${UI.key("G", "Gilgamesh's Tavern")}\n${UI.key("A", "Adventurer's Inn")}\n${UI.key("B", "Boltac's Trading Post")}\n${UI.key("T", "Temple of Cant")}\n${UI.key("E", "Edge of Town")}`);
+    UI.panel(`<h2>CASTLE</h2>${extra}\n${UI.key("G", "Gilgamesh's Tavern")}\n${UI.key("A", "Adventurer's Inn")}\n${UI.key("B", "Boltac's Trading Post")}\n${UI.key("T", "Temple of Cant")}\n${UI.key("S", "The System")}\n${UI.key("E", "Edge of Town")}`);
   },
   key(k) {
     if (k === "g") Game.go(TavernScreen);
     else if (k === "a") Game.go(InnScreen);
     else if (k === "b") Game.go(ShopScreen);
     else if (k === "t") Game.go(TempleScreen);
+    else if (k === "s") openSystem(CastleScreen);
     else if (k === "e") Game.go(EdgeScreen);
   },
 };

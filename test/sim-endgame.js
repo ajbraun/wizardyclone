@@ -73,6 +73,7 @@ for (let i = 0; i < 40 && Game.maze && !(Game.maze.x === 9 && Game.maze.y === 11
   press("w");
 }
 assert(Game.maze && Game.maze.x === 9 && Game.maze.y === 11, "reached amulet tile");
+if (Game.state === S.CombatScreen) grind(2000, "fight on amulet tile"); // stepping on the tile can spawn an encounter
 press("Enter");
 assert(Game.flags.won, "amulet taken");
 assert(get("Game.counters['e:won'] === 1"), "won event counted");
@@ -80,7 +81,9 @@ assert(get("Game.counters['e:won'] === 1"), "won event counted");
 // special abilities: forced encounters resolve without errors
 for (const id of ["SHADE", "DRAGONFLY", "MAGE5", "PRIEST3", "SPIDER"]) {
   run(`
-    Game.party.forEach(c=>{ if(c.status!=="DEAD"&&c.status!=="ASHES"){c.status="OK";c.hp=c.maxhp;c.asleep=false;} });
+    if (!Game.party.length) Game.party = Game.roster.slice(0, 6); // revive after a wipe
+    if (!Game.maze) Game.maze = { level: 3, x: 9, y: 9, f: 0, light: 0 };
+    Game.party.forEach(c=>{ c.status="OK"; c.hp=c.maxhp; c.asleep=false; });
     Combat.opts = {}; Combat.groups = [];
     Combat.addGroup("${id}", 3);
     Game.party.forEach(ch => { ch.tempAC = 0; ch.parry = false; });

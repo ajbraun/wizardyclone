@@ -1,8 +1,25 @@
 "use strict";
 const UI = (() => {
   const logLines = [];
+  const toastQ = [];
   function panel(html) { document.getElementById("panel").innerHTML = html; }
   function viewLabel(s) { document.getElementById("viewlabel").textContent = s || ""; }
+  function renderToasts() {
+    const el = document.getElementById("toasts");
+    if (el) el.innerHTML = toastQ.map(t => `<div class="toast">${t}</div>`).join("");
+  }
+  function toast(html) {
+    toastQ.push(html);
+    if (toastQ.length > 4) toastQ.shift();
+    renderToasts();
+    if (typeof setTimeout === "function") {
+      setTimeout(() => {
+        const i = toastQ.indexOf(html);
+        if (i >= 0) toastQ.splice(i, 1);
+        renderToasts();
+      }, 5000);
+    }
+  }
   function log(msg) {
     logLines.push(msg);
     if (logLines.length > 200) logLines.shift();
@@ -57,5 +74,5 @@ const UI = (() => {
       (sps ? sps + "\n" : "") +
       `SPELLS: ${esc(spellStr)}\n\nITEMS (* = equipped, # = can't use):\n${items}`;
   }
-  return { panel, log, clearLog, key, renderParty, charSheet, viewLabel };
+  return { panel, log, clearLog, key, renderParty, charSheet, viewLabel, toast };
 })();

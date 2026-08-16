@@ -120,4 +120,9 @@ run('Game.party[0].status = "DEAD"; Game.party[0].hp = 0; Game.party.forEach(c=>
 press("t"); press("a"); press("y");
 assert(get('["OK","ASHES"].includes(Game.party[0].status)'), "temple resolved DEAD");
 assert(get("Game.counters['e:temple'] > 0"), "temple event counted");
+// achievements earn themselves organically during a long crawl
+const earned = get("Object.keys(Game.achievements)");
+console.log(`achievements earned organically: ${earned.length} (${earned.slice(0, 8).join(", ")}...)`);
+assert(earned.length >= 5, "crawl earned achievements organically");
+assert(earned.includes("FIRST_BLOOD"), "First Blood among them");
 done();

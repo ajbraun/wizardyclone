@@ -114,7 +114,7 @@ const CampScreen = {
   draw() {
     UI.viewLabel("CAMP");
     if (this.mode === "menu") {
-      UI.panel(`<h2>CAMP</h2>\n${UI.key("C", "Cast a spell")}\n${UI.key("I", "Inspect a member (1-" + Game.party.length + " after pressing I)")}\n${UI.key("R", "Reorder party")}\n${UI.key("Q", "Save & quit (resume here later)")}\n${UI.key("L", "Break camp")}`);
+      UI.panel(`<h2>CAMP</h2>\n${UI.key("C", "Cast a spell")}\n${UI.key("I", "Inspect a member (1-" + Game.party.length + " after pressing I)")}\n${UI.key("R", "Reorder party")}\n${UI.key("S", "The System")}\n${UI.key("Q", "Save & quit (resume here later)")}\n${UI.key("L", "Break camp")}`);
     } else if (this.mode === "who" || this.mode === "inspect") {
       UI.panel(`<h2>${this.mode === "who" ? "WHO CASTS?" : "INSPECT WHO?"}</h2>\n<span class="dim">Press member number 1-${Game.party.length}</span>\n\n${UI.key("L", "Back")}`);
     } else if (this.mode === "spell") {
@@ -138,6 +138,7 @@ const CampScreen = {
       if (k === "c") { this.mode = "who"; this.draw(); }
       else if (k === "i") { this.mode = "inspect"; this.draw(); }
       else if (k === "r") { this.mode = "reorder"; this.order = []; this.draw(); }
+      else if (k === "s") { openSystem(CampScreen); }
       else if (k === "q") { Game.save(); UI.log("The party makes camp. Game saved."); Game.go(TitleScreen); }
       else if (k === "l") Game.go(MazeScreen);
       return;

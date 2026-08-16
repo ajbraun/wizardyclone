@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 const ROOT = path.join(__dirname, "..");
-const FILES = ["util.js", "events.js", "data.js", "maps.js", "char.js", "render.js", "ui.js", "town.js", "maze.js", "combat.js", "main.js"];
+const FILES = ["util.js", "events.js", "data.js", "maps.js", "char.js", "render.js", "ui.js", "town.js", "maze.js", "combat.js", "achievements.js", "main.js"];
 
 function boot(opts) {
   opts = opts || {};
