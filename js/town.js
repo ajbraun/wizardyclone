@@ -411,6 +411,8 @@ const TempleScreen = {
     return out;
   },
   cost(ch) {
+    // novice mercy: raising the under-level-3 dead is on the house
+    if ((ch.status === "DEAD" || ch.status === "ASHES") && ch.level < 3) return 0;
     return { POISONED: 50, PARALYZED: 100, DEAD: 250 * ch.level, ASHES: 500 * ch.level }[ch.status] || 0;
   },
   draw() {
@@ -418,12 +420,16 @@ const TempleScreen = {
     const cands = this.candidates();
     if (this.sel) {
       const c = this.cost(this.sel);
-      UI.panel(`<h2>TEMPLE OF CANT</h2>\n${esc(this.sel.name)} — ${this.sel.status}\nDonation required: <span class="gold">${c} GOLD</span> (party has ${partyGold()})\n\n${UI.key("Y", "Pay and pray")}  ${UI.key("N", "Never mind")}`);
+      const ask = c === 0
+        ? 'The priests take pity on the inexperienced. <span class="gold">No donation required.</span>'
+        : `Donation required: <span class="gold">${c} GOLD</span> (party has ${partyGold()})`;
+      UI.panel(`<h2>TEMPLE OF CANT</h2>\n${esc(this.sel.name)} — ${this.sel.status}\n${ask}\n\n${UI.key("Y", "Pray")}  ${UI.key("N", "Never mind")}`);
       return;
     }
-    const rows = cands.map((ch, i) =>
-      UI.key(LETTERS[i], `${pad(esc(ch.name), 14)} ${pad(ch.status, 10)} ${padl(this.cost(ch), 6)} G`)
-    ).join("\n") || '<span class="dim">(no one needs the temple\'s help)</span>';
+    const rows = cands.map((ch, i) => {
+      const c = this.cost(ch);
+      return UI.key(LETTERS[i], `${pad(esc(ch.name), 14)} ${pad(ch.status, 10)} ${padl(c === 0 ? "FREE" : c + " G", 8)}`);
+    }).join("\n") || '<span class="dim">(no one needs the temple\'s help)</span>';
     UI.panel(`<h2>TEMPLE OF CANT</h2>\n"Who needs our aid?"\n\n${rows}\n\n${UI.key("L", "Leave")}`);
   },
   key(k) {

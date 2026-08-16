@@ -32,6 +32,12 @@ press("l"); press("c"); press("g");
 press("a"); press("a"); press("a");
 press("l"); press("l");
 assert(get("Game.party.length") === 2, "party of 2");
+// regression: temple resurrection is free under level 3, even for a broke party
+run('Game.party[1].status = "DEAD"; Game.party[1].hp = 0; Game.party.forEach(c => c.gold = 0);');
+press("t"); press("a"); press("y");
+assert(get("Game.party[1].status") !== "DEAD", "novice resurrection resolved without gold");
+press("l");
+run('Game.party[1].status = "OK"; Game.party[1].hp = Game.party[1].maxhp; Game.party.forEach(c => c.gold = 150);');
 press("b"); press("b"); press("d"); // buy a long sword
 // regression: "l" is Back, never a list letter — Small Shield (12th item) sells via "m"
 run("Game.party[0].gold = 500");
