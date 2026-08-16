@@ -7,7 +7,7 @@ const Combat = {
   // ------------------------------------------------------------ setup
   start(opts) {
     this.opts = opts || {};
-    const map = LEVELS[Game.maze.level];
+    const map = getLevel(Game.maze.level);
     this.groups = [];
     if (this.opts.boss) {
       this.addGroup("APPRENTICE", 1);
@@ -72,7 +72,7 @@ const Combat = {
 
   draw() {
     const m = Game.maze;
-    Render.draw(LEVELS[m.level], m.x, m.y, m.f, 3);
+    Render.draw(getLevel(m.level), m.x, m.y, m.f, 3);
     UI.viewLabel("*** COMBAT ***");
     if (this.phase === "msg") {
       UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n<span class="k">[ SPACE ]</span>`);
@@ -447,7 +447,7 @@ const Combat = {
     const alive = Game.party.filter(isUp);
     const share = Math.floor(this.xpTotal / Math.max(1, alive.length));
     const encLvl = Math.max(...this.groups.map(g => g.def.lvl));
-    const map = LEVELS[Game.maze.level];
+    const map = getLevel(Game.maze.level);
     const gold = dice("2d10") * map.depth * 5;
     const gshare = Math.floor(gold / Math.max(1, alive.length));
     let anyScaled = false;
@@ -516,7 +516,7 @@ const Combat = {
     if (k === "d") {
       Events.emit("chest", { action: "disarm", ch });
       if (!c.trap) { UI.log("Click... there was no trap. The chest opens!"); this.loot(ch); return; }
-      const map = LEVELS[Game.maze.level];
+      const map = getLevel(Game.maze.level);
       const chance = clamp(30 + ch.stats.AGI * 2 + ch.level * 3 + (ch.cls === "Thief" ? 30 : 0) - map.depth * 5 + mod(ch, "disarm"), 5, 95);
       if (pct(chance)) {
         UI.log(`${ch.name} disarms the ${c.trap}!`);
@@ -535,7 +535,7 @@ const Combat = {
   },
   triggerTrap(ch) {
     const c = this.chest;
-    const map = LEVELS[Game.maze.level];
+    const map = getLevel(Game.maze.level);
     UI.log(`*SNAP* — ${c.trap || "a trap"}!`);
     const t = c.trap;
     c.trap = null;
@@ -565,19 +565,21 @@ const Combat = {
   },
   loot(ch) {
     this.chest.done = true;
-    const map = LEVELS[Game.maze.level];
+    const map = getLevel(Game.maze.level);
     const gold = dice("3d10") * 10 * map.depth;
     const alive = Game.party.filter(isUp);
     const share = Math.floor(gold / Math.max(1, alive.length));
     for (const p of alive) grantGold(p, Math.floor(share * (100 + mod(p, "goldGain")) / 100), "chest");
     UI.log(`The chest holds ${gold} gold! (${share} each)`);
-    let itemId = null;
-    if (pct(35)) {
-      itemId = pick(LOOT_TABLE[map.depth]);
-      ch.items.push({ id: itemId, eq: false });
-      UI.log(`${ch.name} finds: ${ITEMS[itemId].name}!`);
+    let itemName = null;
+    if (this.opts.lair || this.opts.boss || pct(35)) {
+      const q = Math.min(3, (map.depth >= 4 ? 1 : 0) + (this.opts.lair ? 1 : 0) + (this.opts.boss ? 2 : 0) + (pct(20) ? 1 : 0));
+      const entry = generateItem(map.depth, q);
+      ch.items.push(entry);
+      itemName = IT(entry).name;
+      UI.log(`${ch.name} finds: ${itemName}!`);
     }
-    Events.emit("loot", { ch, gold, item: itemId, level: Game.maze.level });
+    Events.emit("loot", { ch, gold, item: itemName, level: Game.maze.level });
     UI.renderParty();
     this.finish();
   },

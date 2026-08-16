@@ -3,7 +3,7 @@
 const { boot, makeChecker } = require("./harness");
 const { assert, done } = makeChecker("smoke");
 
-const H = boot({ files: ["util.js", "events.js", "data.js", "maps.js", "char.js"] });
+const H = boot({ files: ["util.js", "events.js", "data.js", "loot.js", "maps.js", "char.js"] });
 const { get, run } = H;
 
 // --- data cross-references

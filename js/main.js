@@ -2,7 +2,7 @@
 const SAVE_KEY = "wizardy_save_v2";
 const SAVE_KEY_V1 = "wizardy_save_v1";
 const Game = {
-  roster: [], party: [], maze: null, flags: {}, counters: {}, achievements: {}, titles: [], state: null,
+  roster: [], party: [], maze: null, flags: {}, counters: {}, achievements: {}, titles: [], seen: {}, state: null,
   go(screen) {
     this.state = screen;
     if (screen.enter) screen.enter();
@@ -21,6 +21,7 @@ const Game = {
         counters: this.counters,
         achievements: this.achievements,
         titles: this.titles,
+        seen: this.seen,
         nextId: _charId,
       }));
     } catch (e) { /* private mode etc. */ }
@@ -42,6 +43,9 @@ const Game = {
       this.counters = data.counters || {};
       this.achievements = data.achievements || {};
       this.titles = data.titles || [];
+      this.seen = data.seen || {};
+      if (!this.flags.seed) this.flags.seed = 1 + rnd(2147483646);
+      clearGeneratedLevels();
       _charId = data.nextId || (Math.max(0, ...this.roster.map(c => c.id)) + 1);
       return true;
     } catch (e) { return false; }
@@ -52,7 +56,9 @@ const Game = {
   },
   newGame() {
     this.roster = []; this.party = []; this.maze = null; this.flags = {}; this.counters = {};
-    this.achievements = {}; this.titles = [];
+    this.achievements = {}; this.titles = []; this.seen = {};
+    this.flags.seed = 1 + rnd(2147483646);
+    clearGeneratedLevels();
     _charId = 1;
     try { localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_KEY_V1); } catch (e) {}
     Events.emit("newGame", {});

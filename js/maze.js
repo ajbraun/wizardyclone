@@ -1,45 +1,115 @@
 "use strict";
+function findSpecial(map, type) {
+  for (const [k, s] of Object.entries(map.specials)) {
+    if (s.t === type) {
+      const [x, y] = k.split(",").map(Number);
+      return { x, y, s };
+    }
+  }
+  return null;
+}
+function markSeen(level, x, y) {
+  if (!Game.seen[level]) Game.seen[level] = {};
+  Game.seen[level][x + "," + y] = 1;
+}
+
 const MazeScreen = {
   draw() {
     const m = Game.maze;
-    const map = LEVELS[m.level];
+    const map = getLevel(m.level);
+    markSeen(m.level, m.x, m.y);
     Render.draw(map, m.x, m.y, m.f, m.light > 0 ? 4 : 3);
     UI.viewLabel(`MAZE  LEVEL ${m.level}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
     const spc = map.specials[m.x + "," + m.y];
     let prompt = "";
-    if (spc && spc.t === "up") prompt = `\n<span class="k">There are stairs UP here. Press ENTER to climb.</span>`;
-    if (spc && spc.t === "down") prompt = `\n<span class="k">There are stairs DOWN here. Press ENTER to descend.</span>`;
-    if (spc && spc.t === "amulet" && Game.flags.boss && !Game.flags.won)
+    if (spc && spc.t === "up") {
+      prompt = m.level === 1
+        ? `\n<span class="k">Stairs UP to the castle. Press ENTER to leave the maze.</span>`
+        : `\n<span class="k">Stairs UP. Press ENTER to climb.</span>`;
+    } else if (spc && spc.t === "down") {
+      prompt = (m.level === 3 && !Game.flags.boss)
+        ? `\n<span class="dim">A sealed hatch. Something powerful holds it shut.</span>`
+        : `\n<span class="k">Stairs DOWN. Press ENTER to descend.</span>`;
+    } else if (spc && spc.t === "sanctum") {
+      prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle</span>`;
+    } else if (spc && spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
       prompt = `\n<span class="gold">A jeweled AMULET rests on a pedestal! Press ENTER to take it.</span>`;
-    UI.panel(`<h2>THE MAZE</h2>\n<span class="dim">ARROWS/WASD move   C) Camp</span>${prompt}`);
+    }
+    UI.panel(`<h2>THE MAZE</h2>\n<span class="dim">ARROWS/WASD move   M) Map   C) Camp</span>${prompt}`);
   },
   key(k, e) {
     const m = Game.maze;
-    const map = LEVELS[m.level];
+    const map = getLevel(m.level);
     if (k === "arrowup" || k === "w") this.step();
     else if (k === "arrowleft" || k === "a") { m.f = (m.f + 3) % 4; this.draw(); }
     else if (k === "arrowright" || k === "d") { m.f = (m.f + 1) % 4; this.draw(); }
     else if (k === "arrowdown" || k === "s") { m.f = (m.f + 2) % 4; this.draw(); }
     else if (k === "c") Game.go(CampScreen);
+    else if (k === "m") Game.go(MapScreen);
+    else if (k === "t") {
+      const spc = map.specials[m.x + "," + m.y];
+      if (spc && spc.t === "sanctum") {
+        UI.log("The System elevator rattles you back to the surface. No music plays.");
+        Events.emit("elevator", { from: m.level });
+        Game.maze = null;
+        Game.save();
+        Game.go(CastleScreen);
+      }
+    }
     else if (e.key === "Enter") {
       const spc = map.specials[m.x + "," + m.y];
       if (!spc) return;
-      if (spc.t === "up" && m.level === 1) {
-        Game.maze = null;
-        UI.log("Your party emerges into the daylight of the castle.");
-        Events.emit("surface", {});
+      if (spc.t === "up") {
+        if (m.level === 1) {
+          Game.maze = null;
+          UI.log("Your party emerges into the daylight of the castle.");
+          Events.emit("surface", {});
+          Game.save();
+          Game.go(CastleScreen);
+        } else {
+          const prev = getLevel(m.level - 1);
+          const d = findSpecial(prev, "down");
+          Game.maze = { level: m.level - 1, x: d.x, y: d.y, f: 0, light: m.light, sanc: m.sanc };
+          UI.log(`You climb to level ${m.level - 1}.`);
+          Events.emit("ascend", { to: m.level - 1 });
+          this.draw();
+        }
+      } else if (spc.t === "down") {
+        if (m.level === 3 && !Game.flags.boss) {
+          UI.log("The hatch is sealed by a will stronger than yours. For now.");
+          return;
+        }
+        const nxt = getLevel(m.level + 1);
+        const u = findSpecial(nxt, "up");
+        Game.maze = { level: m.level + 1, x: u.x, y: u.y, f: 2, light: m.light, sanc: m.sanc };
+        UI.log(`You descend to level ${m.level + 1}...`);
+        if (m.level + 1 > 3) UI.log("[SYSTEM] Welcome to the Crawl. The floors below are... enthusiastic.");
+        Events.emit("descend", { to: m.level + 1 });
+        this.draw();
+      } else if (spc.t === "sanctum") {
+        m.sanc = m.sanc || {};
+        if (m.sanc[m.level]) { UI.log("The sanctum's vending machine is empty. Come back next expedition."); return; }
+        m.sanc[m.level] = true;
+        for (const ch of Game.party) {
+          if (!isUp(ch) && ch.status !== "PARALYZED") continue;
+          if (ch.status === "POISONED" || ch.status === "PARALYZED") ch.status = "OK";
+          ch.hp = ch.maxhp;
+          restoreSP(ch);
+        }
+        if (!(Game.flags.sanctums || []).some(s => s.level === m.level)) {
+          Game.flags.sanctums = Game.flags.sanctums || [];
+          Game.flags.sanctums.push({ level: m.level, x: m.x, y: m.y });
+        }
+        UI.log("[SYSTEM] Rest stop engaged. HP and spells restored. Complimentary continental nothing.");
+        Events.emit("sanctum", { level: m.level });
         Game.save();
-        Game.go(CastleScreen);
-      } else if (spc.t === "up" || spc.t === "down") {
-        Game.maze = { level: spc.dest.level, x: spc.dest.x, y: spc.dest.y, f: spc.dest.f, light: m.light };
-        UI.log(spc.t === "down" ? `You descend to level ${spc.dest.level}...` : `You climb to level ${spc.dest.level}.`);
-        Events.emit(spc.t === "down" ? "descend" : "ascend", { to: spc.dest.level });
+        UI.renderParty();
         this.draw();
       } else if (spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
         Game.flags.won = true;
         Events.emit("won", {});
         UI.log("*** You take the JEWELED AMULET OF THE OVERLORD! ***");
-        UI.log("Return to the castle in triumph!");
+        UI.log("Return to the castle in triumph! (The hatch below stays open...)");
         Game.save();
         this.draw();
       }
@@ -47,15 +117,15 @@ const MazeScreen = {
   },
   step() {
     const m = Game.maze;
-    const map = LEVELS[m.level];
+    const map = getLevel(m.level);
     const w = cellWalls(map, m.x, m.y)[m.f];
     if (w === 1) { UI.log("*OUCH* You walk into a wall."); Events.emit("bump", { level: m.level }); return; }
     if (w === 2) { UI.log("You push open the door..."); Events.emit("door", { level: m.level }); }
     m.x += DIRS[m.f].dx;
     m.y += DIRS[m.f].dy;
     if (m.light > 0) m.light--;
+    markSeen(m.level, m.x, m.y);
     Events.emit("step", { level: m.level, x: m.x, y: m.y });
-    // poison ticks
     for (const ch of Game.party) {
       if (ch.status === "POISONED" && ch.hp > 0) {
         if (applyDamage(ch, 1, { type: "poison" })) UI.log(`${ch.name} succumbs to poison!`);
@@ -68,7 +138,7 @@ const MazeScreen = {
   },
   onEnter(throughDoor) {
     const m = Game.maze;
-    const map = LEVELS[m.level];
+    const map = getLevel(m.level);
     const key = m.x + "," + m.y;
     const spc = map.specials[key];
     if (spc) {
@@ -94,18 +164,51 @@ const MazeScreen = {
   },
 };
 
+// ---------------------------------------------------------------- automap
+const MapScreen = {
+  draw() {
+    const m = Game.maze;
+    Render.drawMap(getLevel(m.level), Game.seen[m.level] || {}, m.x, m.y, m.f);
+    UI.viewLabel(`MAP  LEVEL ${m.level}`);
+    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; stairs up   &gt; stairs down   S sanctum   D door</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
+  },
+  key(k, e) {
+    if (k === "m" || k === "l" || e.key === "Escape") Game.go(MazeScreen);
+  },
+};
+
+// ---------------------------------------------------------------- party wipe
 function partyWipe() {
+  const floor = Game.maze ? Game.maze.level : 0;
+  const fallen = Game.party.map(c => `${c.name} (L${c.level} ${c.cls})`);
   for (const ch of Game.party) {
     if (ch.status === "OK" || ch.status === "POISONED" || ch.status === "PARALYZED") ch.status = "DEAD";
   }
-  Events.emit("wipe", { party: Game.party.slice(), level: Game.maze ? Game.maze.level : 0 });
-  UI.log("*** YOUR PARTY HAS BEEN ANNIHILATED ***");
-  UI.log("Days later, a search party drags the bodies back to the Temple of Cant.");
+  Events.emit("wipe", { party: Game.party.slice(), level: floor });
   Game.party = [];
   Game.maze = null;
   Game.save();
-  Game.go(CastleScreen);
+  WipeScreen.info = { floor, fallen };
+  Game.go(WipeScreen);
 }
+
+const WipeScreen = {
+  info: null,
+  draw() {
+    Render.blank("GAME OVER");
+    UI.viewLabel("");
+    const i = this.info || { floor: "?", fallen: [] };
+    const c = Game.counters;
+    UI.panel(`<h2>THE SYSTEM'S OBITUARY</h2>\n` +
+      `<span class="bad">Your party has been annihilated on floor ${i.floor}.</span>\n\n` +
+      i.fallen.map(f => `  † ${esc(f)}`).join("\n") + "\n\n" +
+      `<span class="dim">Career to date: ${c["e:step"] || 0} steps, ${c.kills || 0} kills, ${c.deaths || 0} deaths,\n` +
+      `${c.goldEarned || 0} gold earned, deepest floor ${c.maxDepth || 1}.</span>\n\n` +
+      `<span class="dim">"They died doing what they loved: being outnumbered." — The System</span>\n\n` +
+      `A search party drags the bodies to the Temple of Cant.\n\n<span class="k">[ press any key ]</span>`);
+  },
+  key() { Game.go(CastleScreen); },
+};
 
 // ---------------------------------------------------------------- camp
 const CampScreen = {

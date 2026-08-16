@@ -84,5 +84,48 @@ const Render = (() => {
       ctx.fillText(text, 280, 205);
     }
   }
-  return { draw, blank };
+  // automap: draw only cells the party has visited
+  function drawMap(map, seen, px0, py0, pf) {
+    if (!ctx) init();
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, 560, 392);
+    const s = 17;
+    const ox = (560 - map.w * s) / 2, oy = (392 - map.h * s) / 2;
+    ctx.lineWidth = 2;
+    for (let y = 0; y < map.h; y++) {
+      for (let x = 0; x < map.w; x++) {
+        if (!seen[x + "," + y]) continue;
+        const cx = ox + x * s, cy = oy + y * s;
+        ctx.fillStyle = "#0d1a0d";
+        ctx.fillRect(cx, cy, s, s);
+        const w = cellWalls(map, x, y);
+        const seg = (x1, y1, x2, y2, door) => {
+          ctx.strokeStyle = door ? "#ffd700" : "#9fdf9f";
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        };
+        if (w[0]) seg(cx, cy, cx + s, cy, w[0] === 2);
+        if (w[1]) seg(cx + s, cy, cx + s, cy + s, w[1] === 2);
+        if (w[2]) seg(cx, cy + s, cx + s, cy + s, w[2] === 2);
+        if (w[3]) seg(cx, cy, cx, cy + s, w[3] === 2);
+        const spc = map.specials[x + "," + y];
+        if (spc && ["up", "down", "sanctum"].includes(spc.t)) {
+          ctx.fillStyle = "#ffd700";
+          ctx.font = "12px Menlo, monospace";
+          ctx.textAlign = "center";
+          ctx.fillText(spc.t === "up" ? "<" : spc.t === "down" ? ">" : "S", cx + s / 2, cy + s - 4);
+        }
+      }
+    }
+    // the party
+    const cx = ox + px0 * s + s / 2, cy = oy + py0 * s + s / 2;
+    const ang = [-Math.PI / 2, 0, Math.PI / 2, Math.PI][pf];
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(ang) * 6, cy + Math.sin(ang) * 6);
+    ctx.lineTo(cx + Math.cos(ang + 2.5) * 5, cy + Math.sin(ang + 2.5) * 5);
+    ctx.lineTo(cx + Math.cos(ang - 2.5) * 5, cy + Math.sin(ang - 2.5) * 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  return { draw, blank, drawMap };
 })();

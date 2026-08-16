@@ -17,9 +17,9 @@ ach("KILLS_10", "Pest Control", "kills", 10, "Kill 10 monsters",
 ach("KILLS_100", "Exterminator", "kills", 100, "Kill 100 monsters",
   "One hundred kills. The dungeon has noticed. It sent more.", { gold: 250 });
 ach("KILLS_500", "Massacre Artist", "kills", 500, "Kill 500 monsters",
-  "Five hundred. At this point it's less 'adventure' and more 'policy.'", { gold: 1000, title: "Massacre Artist" });
+  "Five hundred. At this point it's less 'adventure' and more 'policy.'", { gold: 1000, title: "Massacre Artist", box: "SILVER" });
 ach("KILLS_2000", "Walking Apocalypse", "kills", 2000, "Kill 2,000 monsters",
-  "Two thousand souls. The System has started a memorial wall. It's a big wall.", { xp: 2000, title: "Walking Apocalypse" });
+  "Two thousand souls. The System has started a memorial wall. It's a big wall.", { xp: 2000, title: "Walking Apocalypse", box: "GOLD" });
 ach("CRITS_10", "Lucky Strike", "crits", 10, "Land 10 critical hits",
   "Ten crits. Luck is a skill if you refuse to examine it.", { gold: 50 });
 ach("CRITS_100", "Surgeon of Violence", "crits", 100, "Land 100 critical hits",
@@ -47,7 +47,7 @@ ach("UNDEAD_50", "Grave Disagreement", "kills:undead", 50, "Destroy 50 undead",
 ach("SLIME_50", "Slime Minister", "kill:SLIME", 50, "Kill 50 Bubbly Slimes",
   "Fifty slimes. Your sword is disgusting and your enemies are jello.", { gold: 150 });
 ach("BOSS_1", "Overqualified Intern", "bossKills", 1, "Defeat Werdna's Apprentice",
-  "You beat the apprentice. Somewhere, a wizard is updating a job posting.", { gold: 500 });
+  "You beat the apprentice. Somewhere, a wizard is updating a job posting.", { box: "SILVER" });
 ach("VICTORIES_25", "Winner", "e:victory", 25, "Win 25 battles",
   "Twenty-five victories. Participation was never in question. Trophies were.", { gold: 100 });
 ach("VICTORIES_100", "Serial Winner", "e:victory", 100, "Win 100 battles",
@@ -76,6 +76,12 @@ ach("DEPTH_2", "Going Down", "maxDepth", 2, "Reach dungeon level 2",
   "Deeper. Where the monsters keep their better monsters.", { gold: 100 });
 ach("DEPTH_3", "Rock Bottom", "maxDepth", 3, "Reach dungeon level 3",
   "The bottom of the dungeon. For now.", { gold: 250 });
+ach("DEPTH_5", "Spelunker Extraordinaire", "maxDepth", 5, "Reach floor 5 of the Crawl",
+  "Below the map. Below the sequel's map.", { box: "SILVER" });
+ach("DEPTH_10", "Sunlight Is a Memory", "maxDepth", 10, "Reach floor 10",
+  "Floor ten. Your vitamin D has filed a missing persons report.", { box: "GOLD", title: "Deep One" });
+ach("DEPTH_20", "No Bottom in Sight", "maxDepth", 20, "Reach floor 20",
+  "Twenty floors down and still descending. The System has stopped taking bets.", { box: "PLATINUM", title: "The Descent Itself" });
 ach("CAMPS_10", "Outdoorsy", "e:camp", 10, "Make camp 10 times",
   "Ten naps on a dungeon floor. The inn misses you. The floor does not.", { gold: 50 });
 
@@ -127,11 +133,11 @@ ach("CREATE_5", "Fresh Meat", "e:create", 5, "Create 5 adventurers",
 ach("RESTS_20", "Professional Napper", "e:rest", 20, "Rest at the inn 20 times",
   "Twenty stays. The innkeeper has stopped changing your sheets.", { gold: 100 });
 ach("WON", "Proving Grounds, Proven", "e:won", 1, "Recover the Amulet",
-  "You did the thing. The realm is saved, pending sequel.", { gold: 2000, xp: 1000, title: "Provener" });
+  "You did the thing. The realm is saved, pending sequel.", { gold: 2000, xp: 1000, title: "Provener", box: "GOLD" });
 ach("SKILL_1", "Latent Talent", "e:skillUnlock", 1, "Unlock a skill",
   "Something clicked. Probably a joint, but the System will allow it.", { gold: 50 });
 ach("SKILLS_10", "Renaissance Crawler", "e:skillUnlock", 10, "Unlock 10 skills",
-  "Ten skills. A well-rounded individual, if the roundness is mostly scar tissue.", { gold: 300, title: "Renaissance Crawler" });
+  "Ten skills. A well-rounded individual, if the roundness is mostly scar tissue.", { gold: 300, title: "Renaissance Crawler", box: "SILVER" });
 ach("SKILLUP_25", "Practice Makes Painful", "e:skillUp", 25, "Gain 25 skill levels",
   "Twenty-five skill-ups. Repetition is a teacher. A cruel, unlicensed teacher.", { gold: 250 });
 
@@ -165,6 +171,10 @@ const Achievements = {
     if (r.title && !Game.titles.includes(r.title)) {
       Game.titles.push(r.title);
       bits.push(`title: "${r.title}"`);
+    }
+    if (r.box) {
+      openLootBox(r.box);
+      bits.push(`${r.box} loot box`);
     }
     UI.toast(`<b>ACHIEVEMENT: ${esc(def.name)}</b><br>${esc(def.flavor)}` +
       (bits.length ? `<br><span class="gold">Reward: ${esc(bits.join(", "))}</span>` : ""));

@@ -124,6 +124,7 @@ bv(L3, 5, 6, 9); bv(L3, 15, 6, 9);
 bv(L3, 5, 10, 13); bv(L3, 15, 10, 13);
 
 sp(L3, 1, 1, { t: "up", dest: { level: 2, x: 1, y: 18, f: 0 } });
+sp(L3, 10, 12, { t: "down" }); // sealed hatch in the boss chamber — opens when the Apprentice falls
 sp(L3, 9, 1, { t: "msg", msg: 'An inscription: "TREMBLE, MEDDLERS. THE APPRENTICE AWAITS."' });
 sp(L3, 9, 7, { t: "boss" });
 sp(L3, 9, 11, { t: "amulet" });

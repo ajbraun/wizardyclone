@@ -36,21 +36,46 @@ const CastleScreen = {
 
 // ---------------------------------------------------------------- edge of town
 const EdgeScreen = {
+  mode: "menu",
+  enter() { this.mode = "menu"; },
+  deepestSanctum() {
+    const s = Game.flags.sanctums || [];
+    return s.length ? s.reduce((a, b) => (b.level > a.level ? b : a)) : null;
+  },
   draw() {
     Render.blank("EDGE OF TOWN");
+    if (this.mode === "enter") {
+      const s = this.deepestSanctum();
+      UI.panel(`<h2>ENTER THE MAZE</h2>\n${UI.key(1, "The stairs (Level 1)")}\n${UI.key(2, `System elevator to the Floor ${s.level} sanctum`)}\n\n${UI.key("L", "Back")}`);
+      return;
+    }
     UI.panel(`<h2>EDGE OF TOWN</h2>\n${UI.key("T", "Training Grounds")}\n${UI.key("M", "The Maze")}\n${UI.key("C", "Castle")}\n${UI.key("L", "Leave Game (save)")}`);
   },
+  enterMaze(start) {
+    UI.log("Your party descends into the maze...");
+    Game.maze = start;
+    Game.go(MazeScreen);
+  },
   key(k) {
+    if (this.mode === "enter") {
+      if (k === "l") { this.mode = "menu"; this.draw(); return; }
+      const s = this.deepestSanctum();
+      if (k === "1") { const st = LEVELS[1].start; this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 }); }
+      else if (k === "2" && s) {
+        getLevel(s.level); // ensure the floor (and its monsters) exist
+        UI.log(`[SYSTEM] Elevator descending to floor ${s.level}. Mind the everything.`);
+        this.enterMaze({ level: s.level, x: s.x, y: s.y, f: 0, light: 0 });
+      }
+      return;
+    }
     if (k === "t") Game.go(TrainingScreen);
     else if (k === "c") Game.go(CastleScreen);
     else if (k === "m") {
       if (!Game.party.some(isUp)) { UI.log("You need an able-bodied party to enter the maze."); return; }
-      if (!Game.maze) {
-        const s = LEVELS[1].start;
-        Game.maze = { level: 1, x: s.x, y: s.y, f: s.f, light: 0 };
-      }
-      UI.log("Your party descends into the maze...");
-      Game.go(MazeScreen);
+      if (Game.maze) { Game.go(MazeScreen); return; } // resume saved expedition
+      if (this.deepestSanctum()) { this.mode = "enter"; this.draw(); return; }
+      const st = LEVELS[1].start;
+      this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 });
     } else if (k === "l") { Game.save(); Game.go(TitleScreen); }
   },
 };
@@ -139,7 +164,7 @@ function inspectScreen(ch, backFn) {
       else if (this.mode === "trade") extra = `\n<span class="k">Press an item number to give away.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "tradeTo") {
         const names = Game.party.map((p, i) => `${i + 1}=${esc(p.name)}`).join("  ");
-        extra = `\n<span class="k">Give the ${esc(ITEMS[ch.items[this.tradeIdx].id].name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
+        extra = `\n<span class="k">Give the ${esc(IT(ch.items[this.tradeIdx]).name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
       }
       else extra = `\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
       UI.panel(UI.charSheet(ch) + "\n" + extra);
@@ -164,7 +189,7 @@ function inspectScreen(ch, backFn) {
             entry.eq = false;
             target.items.push(entry);
             Events.emit("trade", { from: ch, to: target, id: entry.id });
-            UI.log(`${ch.name} gives the ${ITEMS[entry.id].name} to ${target.name}.`);
+            UI.log(`${ch.name} gives the ${IT(entry).name} to ${target.name}.`);
           }
           this.mode = "view";
           UI.renderParty();
@@ -174,7 +199,7 @@ function inspectScreen(ch, backFn) {
       }
       if (!(i >= 0 && i < ch.items.length)) return;
       const entry = ch.items[i];
-      const def = ITEMS[entry.id];
+      const def = IT(entry);
       if (this.mode === "trade") {
         if (Game.party.length < 2 || !Game.party.includes(ch)) { UI.log("No one around to trade with."); return; }
         this.tradeIdx = i;
@@ -375,8 +400,8 @@ const ShopScreen = {
       UI.panel(`${head}<span class="dim"># = ${esc(ch.name)} can't use</span>\n${rows}\n\n${UI.key("L", "Back")}`);
     } else if (this.mode === "sell") {
       const rows = ch.items.map((it, i) => {
-        const def = ITEMS[it.id];
-        return UI.key(i + 1, `${it.eq ? "*" : " "}${pad(esc(def.name), 22)} ${padl(Math.floor(def.price / 2), 5)} G`);
+        const st = IT(it);
+        return UI.key(i + 1, `${it.eq ? "*" : " "}${pad(esc(st.name), 26)} ${padl(Math.floor(st.price / 2), 5)} G`);
       }).join("\n") || '<span class="dim">(nothing to sell)</span>';
       UI.panel(`${head}\n${rows}\n\n${UI.key("L", "Back")}`);
     }
@@ -418,9 +443,9 @@ const ShopScreen = {
       const i = parseInt(k, 10) - 1;
       if (i >= 0 && i < ch.items.length) {
         const id = ch.items[i].id;
-        const def = ITEMS[id];
-        grantGold(ch, Math.floor(def.price / 2), "sell");
-        UI.log(`Boltac buys the ${def.name} for ${Math.floor(def.price / 2)} gold.`);
+        const st = IT(ch.items[i]);
+        grantGold(ch, Math.floor(st.price / 2), "sell");
+        UI.log(`Boltac buys the ${st.name} for ${Math.floor(st.price / 2)} gold.`);
         ch.items.splice(i, 1);
         Events.emit("sell", { ch, id });
         UI.renderParty(); this.draw();

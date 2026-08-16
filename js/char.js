@@ -42,13 +42,13 @@ registerModSource((ch, key, ctx) => {
   }
   return total;
 });
-// item source: equipped items may carry a mods table (affix items, phase 4)
+// item source: equipped items contribute their (affix-merged) mods
 registerModSource((ch, key) => {
   let total = 0;
   for (const it of ch.items) {
     if (!it.eq) continue;
-    const def = ITEMS[it.id];
-    if (def.mods && def.mods[key]) total += def.mods[key];
+    const st = IT(it);
+    if (st.mods && st.mods[key]) total += st.mods[key];
   }
   return total;
 });
@@ -129,16 +129,18 @@ function knownSpells(ch) {
     return maxSP(ch, s.book, s.sl) > 0;
   });
 }
-function itemDef(entry) { return ITEMS[entry.id]; }
+function itemDef(entry) { return IT(entry); }
 function equipped(ch, slot) {
   const e = ch.items.find(i => i.eq && ITEMS[i.id].slot === slot);
-  return e ? ITEMS[e.id] : null;
+  return e ? IT(e) : null;
 }
 function acOf(ch) {
   let ac = 10;
   let any = false;
   for (const i of ch.items) {
-    if (i.eq && ITEMS[i.id].ac) { ac -= ITEMS[i.id].ac; any = true; }
+    if (!i.eq) continue;
+    const st = IT(i);
+    if (st.ac) { ac -= st.ac; any = true; }
   }
   if (ch.cls === "Ninja" && !any) ac = 8 - Math.floor(ch.level / 2);
   ac -= (ch.tempAC || 0);

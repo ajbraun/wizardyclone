@@ -57,9 +57,9 @@ const UI = (() => {
     const st = STATS.map(s => `${pad(s, 4)}${padl(ch.stats[s], 3)}`).join("   ");
     const items = ch.items.length
       ? ch.items.map((it, i) => {
-          const def = ITEMS[it.id];
+          const st = IT(it);
           const usable = canUseItem(ch, it.id) ? "" : " #";
-          return `  ${i + 1}) ${it.eq ? "*" : " "}${esc(def.name)}${usable}`;
+          return `  ${i + 1}) ${it.eq ? "*" : " "}${esc(st.name)}${usable}`;
         }).join("\n")
       : "  (no items)";
     const spells = knownSpells(ch);
