@@ -55,6 +55,14 @@ assert(get("Game.party[0].items.every(i => i.id !== 'LONGSWORD')"), "HERO no lon
 assert(get("Game.counters['e:trade']") === 1, "trade event counted");
 press("t"); press("1"); press("1"); // self-trade is a polite no-op
 assert(get("Game.party[0].items.length") === 1, "self-trade changes nothing");
+// regression: item detail card — press an item's number in inspect view
+press("1");
+{
+  const panel = H.els["panel"].innerHTML;
+  assert(panel.includes("VALUE"), "item card shows value");
+  assert(panel.includes("USABLE BY"), "item card shows class restrictions");
+}
+press("l");
 press("l"); press("l");
 
 // wander until wipe or step budget

@@ -91,8 +91,11 @@ run(`
 `);
 assert(get("__minHeal") >= 3, "healPower adds to healing (min " + get("__minHeal") + ")");
 
-// --- character sheet shows skills
+// --- character sheet shows skills with their effects
 assert(get("UI.charSheet(__ftr)").includes("Brawling L2"), "sheet lists skill with level");
+assert(get('skillEffectStr({ id: "BRAWLER", level: 2 })') === "+1.6 damage", "effect string computes level scaling");
+assert(get('skillEffectStr({ id: "GRAVE_MANNERS", level: 1 })') === "+2 damage vs undead", "vs-gated effect labeled");
+assert(get("UI.charSheet(__ftr)").includes("damage"), "sheet includes effect text");
 
 // --- persistence: skills and pre-unlock progress survive save/load
 run('Events.emit("swing", { ch: __prs, hit: true, dmg: 1 });'); // priest starts brawling progress

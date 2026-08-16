@@ -39,13 +39,13 @@ defSkill("GRAVE_MANNERS", {
   name: "Grave Manners", desc: "Destroy 10 undead",
   flavor: "You've developed strong opinions about the ambulatory dead.",
   on: "kill", when: p => p.monster.undead,
-  unlockAt: 10, mods: { dmg: 2 }, vs: m => m.undead,
+  unlockAt: 10, mods: { dmg: 2 }, vs: m => m.undead, vsDesc: "vs undead",
 });
 defSkill("BUG_STOMPER", {
   name: "Bug Stomper", desc: "Kill 10 oversized arthropods",
   flavor: "Some problems are shoe-shaped. You are the shoe.",
   on: "kill", when: p => ["SPIDER", "BEETLE", "DRAGONFLY"].includes(p.monster.id),
-  unlockAt: 10, mods: { dmg: 2 }, vs: m => ["SPIDER", "BEETLE", "DRAGONFLY"].includes(m.id),
+  unlockAt: 10, mods: { dmg: 2 }, vs: m => ["SPIDER", "BEETLE", "DRAGONFLY"].includes(m.id), vsDesc: "vs bugs",
 });
 defSkill("FINISHER", {
   name: "Finisher", desc: "Kill 25 monsters",
@@ -169,6 +169,18 @@ for (const [id, def] of Object.entries(SKILLS)) {
 }
 
 function skillLevelFor(def, uses) { return Math.floor(Math.sqrt(uses / def.unlockAt)); }
+
+// human-readable current effect of a character's skill entry, e.g. "+1.6 damage vs undead"
+function skillEffectStr(s) {
+  const def = SKILLS[s.id];
+  if (!def) return "";
+  const fx = Object.entries(def.mods).map(([k, base]) => {
+    const v = skillBonus(base, s.level);
+    const shown = Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1);
+    return `+${shown} ${MOD_LABELS[k] || k}`;
+  });
+  return fx.join(", ") + (def.vsDesc ? " " + def.vsDesc : "");
+}
 
 const Skills = {
   actorsFor(type, p) {

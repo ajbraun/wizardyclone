@@ -21,6 +21,45 @@ const AFFIXES = {
   FORTUNE:  { name: "of Fortune",      pos: "suf", slots: ["armor", "shield", "helm", "weapon"], mods: { crit: 2, goldGain: 5 }, price: 300 },
 };
 
+const MOD_LABELS = {
+  toHit: "to hit", dmg: "damage", ac: "AC", crit: "% crit chance",
+  runChance: "% flee chance", inspect: "% trap inspection", disarm: "% trap disarm",
+  xpGain: "% XP gain", goldGain: "% gold gain", spellPower: "spell power",
+  healPower: "healing power", swings: "extra swings",
+};
+
+// full stat card for an item instance — the System hides nothing
+function itemCard(entry, ch) {
+  const st = IT(entry);
+  const base = ITEMS[entry.id];
+  const lines = [];
+  lines.push(`<span class="hi">${esc(st.name)}</span>  <span class="dim">[${st.slot}]</span>`);
+  lines.push("");
+  if (st.dmg) lines.push(`DAMAGE     ${st.dmg}${st.dmg !== base.dmg ? `  <span class="dim">(base ${base.dmg})</span>` : ""}`);
+  if (st.ac) lines.push(`ARMOR      +${st.ac} AC${st.ac !== (base.ac || 0) ? `  <span class="dim">(base +${base.ac || 0})</span>` : ""}`);
+  if (st.use === "heal") lines.push(`ON USE     heals ${st.dice} HP`);
+  if (st.use === "curepoison") lines.push(`ON USE     cures poison`);
+  for (const [k, v] of Object.entries(st.mods || {})) {
+    lines.push(`BONUS      ${v > 0 ? "+" : ""}${v} ${MOD_LABELS[k] || k}`);
+  }
+  if (entry.affixes && entry.affixes.length) {
+    lines.push("", "ENCHANTMENTS:");
+    for (const aid of entry.affixes) {
+      const a = AFFIXES[aid];
+      if (!a) continue;
+      const fx = [];
+      if (a.dmgPlus) fx.push(`+${a.dmgPlus} damage`);
+      if (a.ac) fx.push(`+${a.ac} AC`);
+      for (const [k, v] of Object.entries(a.mods || {})) fx.push(`${v > 0 ? "+" : ""}${v} ${MOD_LABELS[k] || k}`);
+      lines.push(`  <span class="k">${esc(a.name)}</span> — ${esc(fx.join(", "))}`);
+    }
+  }
+  lines.push("", `USABLE BY  ${base.cls ? esc(base.cls.join(", ")) : "everyone"}` +
+    (ch && !canUseItem(ch, entry.id) ? `  <span class="bad">(not ${esc(ch.name)})</span>` : ""));
+  lines.push(`VALUE      <span class="gold">${st.price} G</span>  <span class="dim">(Boltac pays ${Math.floor(st.price / 2)})</span>`);
+  return lines.join("\n");
+}
+
 function addDiceBonus(spec, plus) {
   const m = /^(\d*d\d+)([+-]\d+)?$/.exec(spec);
   if (!m) return spec;

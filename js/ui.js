@@ -69,15 +69,15 @@ const UI = (() => {
       .join("\n");
     const skills = (ch.skills || []).map(s => {
       const def = SKILLS[s.id];
-      return `${def ? def.name : s.id} L${s.level}`;
-    }).join(", ");
+      return `${def ? def.name : s.id} L${s.level} <span class="dim">(${skillEffectStr(s)})</span>`;
+    }).join("\n        ");
     return `<span class="hi">${esc(ch.name)}</span>  L${ch.level} ${ch.align} ${esc(ch.race)} ${esc(ch.cls)}\n\n` +
       `${st}\n\n` +
       `HP ${ch.hp}/${ch.maxhp}   AC ${acOf(ch)}   STATUS ${ch.status}\n` +
       `XP ${ch.xp}  (next level: ${xpForLevel(ch.cls, ch.level + 1)})   <span class="gold">GOLD ${ch.gold}</span>\n\n` +
       (sps ? sps + "\n" : "") +
       `SPELLS: ${esc(spellStr)}\n` +
-      `SKILLS: ${esc(skills || "(none yet — the System is watching)")}\n\n` +
+      `SKILLS: ${skills || '<span class="dim">(none yet — the System is watching)</span>'}\n\n` +
       `ITEMS (* = equipped, # = can't use):\n${items}`;
   }
   return { panel, log, clearLog, key, renderParty, charSheet, viewLabel, toast };

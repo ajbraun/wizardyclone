@@ -158,6 +158,10 @@ function inspectScreen(ch, backFn) {
     mode: "view", tradeIdx: -1,
     draw() {
       let extra = "";
+      if (this.mode === "detail") {
+        UI.panel(itemCard(ch.items[this.detailIdx], ch) + `\n\n${UI.key("L", "Back")}`);
+        return;
+      }
       if (this.mode === "equip") extra = `\n<span class="k">Press an item number to equip/unequip.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "drop") extra = `\n<span class="k">Press an item number to DROP it.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "use") extra = `\n<span class="k">Press a potion's number to drink it.</span> ${UI.key("L", "Done")}`;
@@ -166,7 +170,7 @@ function inspectScreen(ch, backFn) {
         const names = Game.party.map((p, i) => `${i + 1}=${esc(p.name)}`).join("  ");
         extra = `\n<span class="k">Give the ${esc(IT(ch.items[this.tradeIdx]).name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
       }
-      else extra = `\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
+      else extra = `\n<span class="dim">Press an item's number for its full stats.</span>\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
       UI.panel(UI.charSheet(ch) + "\n" + extra);
     },
     key(k) {
@@ -176,6 +180,10 @@ function inspectScreen(ch, backFn) {
         else if (k === "d") { this.mode = "drop"; this.draw(); }
         else if (k === "u") { this.mode = "use"; this.draw(); }
         else if (k === "l") backFn();
+        else {
+          const n = parseInt(k, 10) - 1;
+          if (n >= 0 && n < ch.items.length) { this.detailIdx = n; this.mode = "detail"; this.draw(); }
+        }
         return;
       }
       if (k === "l") { this.mode = "view"; this.draw(); return; }
