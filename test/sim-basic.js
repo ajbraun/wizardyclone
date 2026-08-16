@@ -47,6 +47,16 @@ press("b"); press("m");
 assert(get("Game.party[0].items.some(i => i.id === 'SMALLSHIELD')"), "12th stock item buyable via 'm'");
 press("l"); press("l");
 
+// regression: trade gear between party members via Inspect > Trade
+press("g"); press("i"); press("1"); // tavern -> inspect HERO
+press("t"); press("1"); press("2"); // give item 1 (long sword) to member 2
+assert(get("Game.party[1].items.some(i => i.id === 'LONGSWORD' && !i.eq)"), "long sword traded to CLERIC, unequipped");
+assert(get("Game.party[0].items.every(i => i.id !== 'LONGSWORD')"), "HERO no longer has the long sword");
+assert(get("Game.counters['e:trade']") === 1, "trade event counted");
+press("t"); press("1"); press("1"); // self-trade is a polite no-op
+assert(get("Game.party[0].items.length") === 1, "self-trade changes nothing");
+press("l"); press("l");
+
 // wander until wipe or step budget
 press("e"); press("m");
 assert(get("!!Game.maze"), "entered maze");

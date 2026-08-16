@@ -130,18 +130,24 @@ const TavernScreen = {
 // ---------------------------------------------------------------- inspect
 function inspectScreen(ch, backFn) {
   return {
-    mode: "view",
+    mode: "view", tradeIdx: -1,
     draw() {
       let extra = "";
       if (this.mode === "equip") extra = `\n<span class="k">Press an item number to equip/unequip.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "drop") extra = `\n<span class="k">Press an item number to DROP it.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "use") extra = `\n<span class="k">Press a potion's number to drink it.</span> ${UI.key("L", "Done")}`;
-      else extra = `\n${UI.key("E", "Equip")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
+      else if (this.mode === "trade") extra = `\n<span class="k">Press an item number to give away.</span> ${UI.key("L", "Done")}`;
+      else if (this.mode === "tradeTo") {
+        const names = Game.party.map((p, i) => `${i + 1}=${esc(p.name)}`).join("  ");
+        extra = `\n<span class="k">Give the ${esc(ITEMS[ch.items[this.tradeIdx].id].name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
+      }
+      else extra = `\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
       UI.panel(UI.charSheet(ch) + "\n" + extra);
     },
     key(k) {
       if (this.mode === "view") {
         if (k === "e") { this.mode = "equip"; this.draw(); }
+        else if (k === "t") { this.mode = "trade"; this.draw(); }
         else if (k === "d") { this.mode = "drop"; this.draw(); }
         else if (k === "u") { this.mode = "use"; this.draw(); }
         else if (k === "l") backFn();
@@ -149,9 +155,33 @@ function inspectScreen(ch, backFn) {
       }
       if (k === "l") { this.mode = "view"; this.draw(); return; }
       const i = parseInt(k, 10) - 1;
+      if (this.mode === "tradeTo") {
+        if (i >= 0 && i < Game.party.length) {
+          const target = Game.party[i];
+          if (target === ch) { UI.log(`${ch.name} hands it to... ${ch.name}. Done?`); }
+          else {
+            const entry = ch.items.splice(this.tradeIdx, 1)[0];
+            entry.eq = false;
+            target.items.push(entry);
+            Events.emit("trade", { from: ch, to: target, id: entry.id });
+            UI.log(`${ch.name} gives the ${ITEMS[entry.id].name} to ${target.name}.`);
+          }
+          this.mode = "view";
+          UI.renderParty();
+          this.draw();
+        }
+        return;
+      }
       if (!(i >= 0 && i < ch.items.length)) return;
       const entry = ch.items[i];
       const def = ITEMS[entry.id];
+      if (this.mode === "trade") {
+        if (Game.party.length < 2 || !Game.party.includes(ch)) { UI.log("No one around to trade with."); return; }
+        this.tradeIdx = i;
+        this.mode = "tradeTo";
+        this.draw();
+        return;
+      }
       if (this.mode === "equip") {
         if (entry.eq) entry.eq = false;
         else if (!canUseItem(ch, entry.id)) UI.log(`${ch.name} cannot use the ${def.name}.`);
