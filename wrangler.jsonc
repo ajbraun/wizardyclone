@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers static-assets config: `npx wrangler deploy` serves the
+  // game as a static site. No worker code yet — add a "main" script here if a
+  // leaderboard/API ever lands.
+  "name": "wizardyclone",
+  "compatibility_date": "2026-08-16",
+  "assets": {
+    "directory": "."
+  }
+}
