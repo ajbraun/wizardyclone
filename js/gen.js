@@ -62,6 +62,27 @@ const GEN_LORE = {
     "It considers you a food-shaped scheduling opportunity.",
   ],
 };
+// Floor modifiers: one-line rules the System announces on arrival. Rolled
+// deterministically with the floor (same seed -> same modifier). Crawl only.
+const FLOOR_MODS = [
+  { id: "BLOOD", name: "BLOOD SURCHARGE", mdmg: 2, goldMult: 1.5,
+    announce: "[SYSTEM] Floor modifier: BLOOD SURCHARGE. Everything here hits harder. Hazard pay: +50% gold." },
+  { id: "DARK", name: "BLACKOUT", dark: true, goldMult: 1.5,
+    announce: "[SYSTEM] Floor modifier: BLACKOUT. Your map subscription does not cover this floor. Loot pays +50% for the inconvenience." },
+  { id: "SWARM", name: "RUSH HOUR", rate: 18, xpMult: 1.25,
+    announce: "[SYSTEM] Floor modifier: RUSH HOUR. Everyone is out today, and they are all headed toward you. XP +25%." },
+  { id: "SPONSORED", name: "SPONSORED FLOOR", eliteMult: 4, goldMult: 1.25,
+    announce: "[SYSTEM] This floor is brought to you by a NAMED monster. It knows you're here. It has told its friends." },
+  { id: "QUIET", name: "HIRING FREEZE", rate: 4,
+    announce: "[SYSTEM] Floor modifier: HIRING FREEZE. The monsters are understaffed. Enjoy the silence. Earn nothing extra." },
+  { id: "GREED", name: "AUDIT SEASON", chestTrap: true, chestGoldMult: 2,
+    announce: "[SYSTEM] Floor modifier: AUDIT SEASON. Every chest on this floor is trapped, and twice as rich. Choose greedily." },
+];
+// combat and maze code consult the current floor's modifier through this
+function floorMod() {
+  const map = Game.maze ? getLevel(Game.maze.level) : null;
+  return (map && map.mod) || {};
+}
 const GEN_MSGS = [
   "A scrawl on the wall: 'THE SYSTEM THANKS YOU FOR YOUR CONTINUED DESCENT.'",
   "Claw marks on the floor, all pointing down.",
@@ -168,6 +189,11 @@ function genLevel(n) {
   m.table = ids.map(id => [id, 1 + ri(3)]);
   m.depth = n;
   m.rate = 10;
+  // floor modifier: half the Crawl runs under a house rule
+  if (n >= 4 && rng() < 0.5) {
+    m.mod = FLOOR_MODS[ri(FLOOR_MODS.length)];
+    if (m.mod.rate) m.rate = m.mod.rate;
+  }
   return m;
 }
 

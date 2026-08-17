@@ -59,7 +59,8 @@ const Combat = {
       const extra = this.opts.lair ? 100 : [0, 25, 40, 55][map.depth];
       if (pct(extra)) this.addGroup(pickWeighted(map.table));
       if (map.depth >= 3 && pct(20)) this.addGroup(pickWeighted(map.table));
-      if (pct((this.opts.lair ? 20 : 6) + map.depth)) this.addElite(map);
+      const eliteChance = ((this.opts.lair ? 20 : 6) + map.depth) * (map.mod && map.mod.eliteMult || 1);
+      if (pct(eliteChance)) this.addElite(map);
     }
     for (const ch of Game.party) { ch.tempAC = 0; ch.asleep = false; ch.parry = false; }
     this.round = 0; this.xpTotal = 0; this.msgs = []; this.intentRound = -1;
@@ -567,7 +568,7 @@ const Combat = {
     let total = 0, hits = 0;
     for (const dd of def.dmg) {
       const effAC = acOf(ch) - (ch.parry ? 2 : 0) + (helpless ? 8 : 0);
-      if (chance(hitChance(def.lvl + effAC - 9))) { hits++; total += dice(dd); }
+      if (chance(hitChance(def.lvl + effAC - 9))) { hits++; total += dice(dd) + (floorMod().mdmg || 0); }
     }
     if (!hits) {
       this.say(`A ${def.name} lunges at ${ch.name} and misses.`);
@@ -592,10 +593,11 @@ const Combat = {
   hadElite() { return this.groups.some(g => g.elite); },
   victory() {
     const alive = Game.party.filter(isUp);
-    const share = Math.floor(this.xpTotal / Math.max(1, alive.length));
+    const fm = floorMod();
+    const share = Math.floor(this.xpTotal * (fm.xpMult || 1) / Math.max(1, alive.length));
     const encLvl = Math.max(...this.groups.map(g => g.def.lvl));
     const map = getLevel(Game.maze.level);
-    const gold = dice("2d10") * map.depth * 5 * this.goldMult();
+    const gold = Math.floor(dice("2d10") * map.depth * 5 * this.goldMult() * (fm.goldMult || 1));
     const gshare = Math.floor(gold / Math.max(1, alive.length));
     let anyScaled = false;
     for (const ch of alive) {
@@ -627,7 +629,7 @@ const Combat = {
   },
   openChestUI() {
     const traps = ["POISON NEEDLE", "GAS BOMB", "CROSSBOW BOLT", "EXPLODING BOX", "ALARM"];
-    this.chest = { trap: pct(70) ? pick(traps) : null, revealed: null, done: false };
+    this.chest = { trap: pct(floorMod().chestTrap ? 100 : 70) ? pick(traps) : null, revealed: null, done: false };
     this.worker = Math.max(0, Game.party.findIndex(isUp));
     this.phase = "chest";
     this.draw();
@@ -714,7 +716,8 @@ const Combat = {
   loot(ch) {
     this.chest.done = true;
     const map = getLevel(Game.maze.level);
-    const gold = dice("3d10") * 10 * map.depth * this.goldMult();
+    const fm = floorMod();
+    const gold = Math.floor(dice("3d10") * 10 * map.depth * this.goldMult() * (fm.chestGoldMult || fm.goldMult || 1));
     const alive = Game.party.filter(isUp);
     const share = Math.floor(gold / Math.max(1, alive.length));
     for (const p of alive) grantGold(p, Math.floor(share * (100 + mod(p, "goldGain")) / 100), "chest");

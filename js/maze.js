@@ -19,7 +19,7 @@ const MazeScreen = {
     const map = getLevel(m.level);
     markSeen(m.level, m.x, m.y);
     Render.draw(map, m.x, m.y, m.f, m.light > 0 ? 4 : 3);
-    UI.viewLabel(`MAZE  LEVEL ${m.level}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
+    UI.viewLabel(`MAZE  LEVEL ${m.level}${map.mod ? `  [${map.mod.name}]` : ""}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
     const spc = map.specials[m.x + "," + m.y];
     let prompt = "";
     if (spc && spc.t === "up") {
@@ -71,6 +71,7 @@ const MazeScreen = {
           const d = findSpecial(prev, "down");
           Game.maze = { level: m.level - 1, x: d.x, y: d.y, f: 0, light: m.light, sanc: m.sanc };
           UI.log(`You climb to level ${m.level - 1}.`);
+          if (prev.mod) UI.log(prev.mod.announce);
           Events.emit("ascend", { to: m.level - 1 });
           this.draw();
         }
@@ -84,6 +85,7 @@ const MazeScreen = {
         Game.maze = { level: m.level + 1, x: u.x, y: u.y, f: 2, light: m.light, sanc: m.sanc };
         UI.log(`You descend to level ${m.level + 1}...`);
         if (m.level + 1 > 3) UI.log("[SYSTEM] Welcome to the Crawl. The floors below are... enthusiastic.");
+        if (nxt.mod) UI.log(nxt.mod.announce);
         Events.emit("descend", { to: m.level + 1 });
         this.draw();
       } else if (spc.t === "sanctum") {
@@ -168,7 +170,14 @@ const MazeScreen = {
 const MapScreen = {
   draw() {
     const m = Game.maze;
-    Render.drawMap(getLevel(m.level), Game.seen[m.level] || {}, m.x, m.y, m.f);
+    const map = getLevel(m.level);
+    if (map.mod && map.mod.dark) {
+      Render.blank("SIGNAL LOST");
+      UI.viewLabel(`MAP  LEVEL ${m.level}  [${map.mod.name}]`);
+      UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="bad">SIGNAL LOST.</span>\n<span class="dim">[SYSTEM] This floor is a BLACKOUT zone. The map knows nothing.\nYour legs will have to remember for it.</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
+      return;
+    }
+    Render.drawMap(map, Game.seen[m.level] || {}, m.x, m.y, m.f);
     UI.viewLabel(`MAP  LEVEL ${m.level}`);
     UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; stairs up   &gt; stairs down   S sanctum   D door</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
   },

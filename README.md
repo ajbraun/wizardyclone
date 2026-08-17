@@ -23,6 +23,12 @@ no dependencies. Saves live in your browser's localStorage.
   never rubber-bands to you), rewards scale with the level gap (punching down
   pays nothing), and System Sanctums every third floor offer rest and an
   elevator home.
+- **Telegraphs & NAMED monsters** — drakes inhale and mages weave fire a round
+  before it hurts; kill, sleep, or silence them first and the attack dies with
+  them. Rare named elites (*Gruzzik the Damp*, regenerating) get a System
+  introduction, an affix, and a guaranteed chest.
+- **Floor modifiers** — half the Crawl runs under a house rule the System
+  announces on arrival: BLOOD SURCHARGE, BLACKOUT, RUSH HOUR, AUDIT SEASON...
 - **Automap** — press `M`. Fog-of-war: it only knows where you've walked.
 
 ## Controls
