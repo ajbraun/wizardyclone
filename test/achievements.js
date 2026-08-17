@@ -58,11 +58,12 @@ run('Game.counters["e:bump"] = 99; Events.emit("bump", {});');
 assert(get("!!Game.achievements.BUMPS_100"), "Wall Magnet earned");
 assert(get('Game.titles.includes("Wall Magnet")'), "title granted");
 
-// System screen: secrets hidden until earned, stats and earned list shown
+// System screen: undiscovered achievements are hidden entirely (count only)
 run("openSystem(CastleScreen);");
 let panel = H.els["panel"].innerHTML;
-assert(panel.includes("???"), "secret achievements hidden");
-assert(!panel.includes("Nightmare Fuel"), "secret name not leaked");
+assert(panel.includes("undiscovered"), "undiscovered count shown");
+assert(!panel.includes("Nightmare Fuel"), "unearned achievement names not leaked");
+assert(!panel.includes("Serial Winner"), "no pending list with progress");
 assert(panel.includes("Wall Magnet"), "earned achievement listed");
 assert(panel.includes("WALLS HEADBUTTED"), "stats shown");
 press("l");

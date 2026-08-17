@@ -230,11 +230,10 @@ const SystemScreen = {
     const eRows = earned.map(a =>
       ` <span class="gold">*</span> <span class="hi">${esc(a.name)}</span> — <span class="dim">${esc(a.flavor)}</span>`
     ).join("\n") || ' <span class="dim">(nothing yet — the System is patient)</span>';
-    const pRows = pending.map(a => a.secret
-      ? ' <span class="dim">? ??? — the System declines to elaborate.</span>'
-      : ` <span class="dim">- ${esc(a.name)} (${Math.min(c[a.counter] || 0, a.at)}/${a.at}) — ${esc(a.desc)}</span>`
-    ).join("\n");
-    UI.panel(`<h2>THE SYSTEM</h2><span class="dim">It sees all. It judges most.</span>\n\n${stats}${titles}\n\nEARNED (${earned.length}/${ACHIEVEMENTS.length}):\n${eRows}\n\nPENDING:\n${pRows}\n\n${UI.key("L", "Leave")}`);
+    const pLine = pending.length
+      ? `\n\n<span class="dim">...and ${pending.length} undiscovered. The System declines to spoil them.</span>`
+      : `\n\n<span class="gold">All of them. The System is genuinely unsettled.</span>`;
+    UI.panel(`<h2>THE SYSTEM</h2><span class="dim">It sees all. It judges most.</span>\n\n${stats}${titles}\n\nACHIEVEMENTS (${earned.length}/${ACHIEVEMENTS.length}):\n${eRows}${pLine}\n\n${UI.key("L", "Leave")}`);
   },
   key(k) { if (k === "l") Game.go(this.back || CastleScreen); },
 };
