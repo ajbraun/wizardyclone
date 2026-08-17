@@ -56,6 +56,12 @@ ach("FLEES_10", "Tactical Repositioning", "flees", 10, "Successfully flee 10 bat
   "Running away ten times is called cardio.", { gold: 50 });
 ach("ENCOUNTERS_100", "Popular", "e:encounter", 100, "Get into 100 encounters",
   "Everything in this dungeon wants to meet you. Briefly.", { gold: 100 });
+ach("ELITE_1", "Names Are for Closers", "eliteKills", 1, "Slay a NAMED monster",
+  "It had a name, an epithet, and a plan. You had a sharp object.", { gold: 150 });
+ach("ELITE_10", "Celebrity Hunter", "eliteKills", 10, "Slay 10 NAMED monsters",
+  "Ten celebrities un-personed. The tabloids are furious. The System sells the photos.", { box: "SILVER", title: "Celebrity Hunter" });
+ach("INTERRUPT_10", "Rude Interruption", "e:interrupt", 10, "Stop 10 telegraphed attacks before they land",
+  "Ten spells died mid-syllable. Somewhere, a wizards' union files a grievance.", { gold: 150 });
 
 // -------------------------------------------------------------- exploration
 ach("STEPS_100", "Baby Steps", "e:step", 100, "Walk 100 steps",
@@ -190,6 +196,7 @@ const Achievements = {
 Events.on("kill", p => {
   Game.count("kills");
   Game.count("kill:" + p.monster.id);
+  if (p.monster.elite) Game.count("eliteKills");
   if (p.monster.undead) Game.count("kills:undead");
   if (p.sleeping) Game.count("sleepKills");
   if (p.how === "spell") Game.count("spellKills");

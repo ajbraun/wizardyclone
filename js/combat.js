@@ -2,6 +2,7 @@
 // the System's bestiary card: stats, traits, kill count, and editorial
 function monsterCard(def) {
   const traits = [];
+  if (def.elite) traits.push(`NAMED — ${def.affix.trait}`);
   if (def.undead) traits.push("technically deceased (immune to sleep)");
   else if ((def.sleepResist || 0) >= 90) traits.push("does not sleep");
   if (def.poison) traits.push("venomous");
@@ -26,10 +27,24 @@ function monsterCard(def) {
     `<span class="k">[SYSTEM ASSESSMENT]</span> ${esc(assess)}`;
 }
 
+// ---------------------------------------------------------------- named elites
+// A rare promoted monster: its own name, one affix, real hp, and a guaranteed
+// chest. The System introduces it like a fight announcer, because it is one.
+const ELITE_AFFIXES = [
+  { key: "REGENERATING", trait: "regenerates every round", lore: "It heals faster than your accusations can land." },
+  { key: "ARMORED", trait: "absurdly armored", lore: "Somewhere, a castle is missing a wall." },
+  { key: "FRENZIED", trait: "attacks in a frenzy", lore: "It bills by the swing, and it is highly motivated." },
+  { key: "VENOMOUS", trait: "venomous", lore: "The bite is free. The antivenin is not." },
+  { key: "GILDED", trait: "worth triple gold", lore: "It swallowed its hoard for safekeeping. Safekeeping has ended." },
+];
+const ELITE_SYL1 = ["Gruz", "Mor", "Thak", "Vel", "Skar", "Bram", "Naz", "Kro", "Zab", "Dren"];
+const ELITE_SYL2 = ["zik", "gath", "maw", "rek", "dun", "gore", "lok", "nash", "vex", "tul"];
+const ELITE_EPITHETS = ["the Damp", "the Unpaid", "the Twice-Banished", "the Recently Promoted", "the Peckish", "the Overdue", "the Unlicensed", "the Load-Bearing", "the Semi-Retired", "the Adequate"];
+
 const Combat = {
   groups: [], phase: "input", sub: "action", inputIdx: 0, actions: [],
   msgs: [], round: 0, xpTotal: 0, opts: {}, pendingSpell: null,
-  chest: null, worker: 0,
+  chest: null, worker: 0, intentRound: -1,
 
   // ------------------------------------------------------------ setup
   start(opts) {
@@ -44,11 +59,15 @@ const Combat = {
       const extra = this.opts.lair ? 100 : [0, 25, 40, 55][map.depth];
       if (pct(extra)) this.addGroup(pickWeighted(map.table));
       if (map.depth >= 3 && pct(20)) this.addGroup(pickWeighted(map.table));
+      if (pct((this.opts.lair ? 20 : 6) + map.depth)) this.addElite(map);
     }
     for (const ch of Game.party) { ch.tempAC = 0; ch.asleep = false; ch.parry = false; }
-    this.round = 0; this.xpTotal = 0; this.msgs = [];
+    this.round = 0; this.xpTotal = 0; this.msgs = []; this.intentRound = -1;
     const names = this.groups.map(g => this.groupLabel(g)).join(" and ");
     UI.log(`You encounter ${names}!`);
+    for (const g of this.groups) if (g.elite) {
+      UI.log(`[SYSTEM] A NAMED monster: ${g.def.name.toUpperCase()} — a ${g.def.base}, but ${g.def.affix.trait}. Try to feel honored.`);
+    }
     Events.emit("encounter", { groups: this.groups.map(g => g.def), boss: !!this.opts.boss, lair: !!this.opts.lair, level: Game.maze.level });
     this.surprised = false; this.surprising = false;
     if (!this.opts.boss) {
@@ -68,6 +87,22 @@ const Combat = {
       members: Array.from({ length: n }, () => ({ hp: dice(def.hp), asleep: false, para: false })),
     });
   },
+  addElite(map) {
+    const base = MONSTERS[pickWeighted(map.table)];
+    const affix = pick(ELITE_AFFIXES);
+    const name = `${pick(ELITE_SYL1)}${pick(ELITE_SYL2)} ${pick(ELITE_EPITHETS)}`;
+    const def = Object.assign({}, base, {
+      name, pl: name, elite: true, affix, base: base.name,
+      lvl: base.lvl + 2,
+      ac: base.ac - (affix.key === "ARMORED" ? 3 : 0),
+      dmg: affix.key === "FRENZIED" ? base.dmg.concat([base.dmg[0]]) : base.dmg,
+      poison: base.poison || affix.key === "VENOMOUS",
+      xp: base.xp * 4,
+      lore: affix.lore,
+    });
+    const hp = dice(base.hp) + dice(base.hp) + def.lvl * 2;
+    this.groups.unshift({ def, silenced: false, acMod: 0, elite: true, members: [{ hp, maxhp: hp, asleep: false, para: false }] });
+  },
   aliveIn(g) { return g.members.filter(m => m.hp > 0); },
   aliveGroups() { return this.groups.filter(g => this.aliveIn(g).length > 0); },
   groupLabel(g) {
@@ -79,8 +114,26 @@ const Combat = {
   beginInput() {
     this.phase = "input"; this.sub = "action"; this.actions = []; this.inputIdx = 0;
     for (const ch of Game.party) ch.parry = false;
+    // roll once per round, not on "take back"
+    if (this.intentRound !== this.round) { this.rollIntents(); this.intentRound = this.round; }
     this.skipToNextActor();
     this.draw();
+  },
+  // Telegraphs: one special action per group per round, announced before input.
+  // The payoff for focus fire — kill or silence the group and it never lands.
+  rollIntents() {
+    for (const g of this.groups) {
+      g.intent = null; g.intentDone = false;
+      if (!this.aliveIn(g).length) continue;
+      const def = g.def;
+      if (def.breath && pct(45)) {
+        g.intent = { kind: "breath", label: "INHALING", warn: `The ${def.name} inhales deeply.` };
+      } else if ((def.mage || def.priest) && !g.silenced && pct(55)) {
+        if (def.mage >= 3 && pct(60)) g.intent = { kind: "mahalito", label: "WEAVING FIRE", warn: `A ${def.name} begins weaving fire between its hands.` };
+        else if (def.mage && pct(50)) g.intent = { kind: "katino", label: "CHANTING", warn: `A ${def.name} chants something soothing. Suspiciously soothing.` };
+        else g.intent = { kind: "bolt", label: "CHANNELING", warn: `A ${def.name} gathers crackling energy.` };
+      }
+    }
   },
   currentChar() { return Game.party[this.inputIdx]; },
   skipToNextActor() {
@@ -113,8 +166,13 @@ const Combat = {
     const enemies = this.groups.map((g, i) => {
       const n = this.aliveIn(g).length;
       const status = n === 0 ? ' <span class="dim">(slain)</span>' : g.members.some(mm => mm.hp > 0 && (mm.asleep || mm.para)) ? ' <span class="k">(incapacitated)</span>' : "";
-      return `  ${i + 1}) ${n === 0 ? '<span class="dim">' : ""}${this.groupLabel(g)}${n === 0 ? "</span>" : ""}${status}`;
+      const label = g.elite ? `<span class="gold">${this.groupLabel(g)}</span>` : this.groupLabel(g);
+      const intent = n > 0 && g.intent && !g.intentDone ? ` <span class="bad">[${g.intent.label}]</span>` : "";
+      return `  ${i + 1}) ${n === 0 ? '<span class="dim">' : ""}${label}${n === 0 ? "</span>" : ""}${status}${intent}`;
     }).join("\n");
+    const warns = this.phase === "input" ? this.groups
+      .filter(g => this.aliveIn(g).length && g.intent && !g.intentDone)
+      .map(g => `<span class="bad">! ${esc(g.intent.warn)}</span>`).join("\n") : "";
     const ch = this.currentChar();
     let prompt = "";
     if (this.sub === "action") {
@@ -145,7 +203,7 @@ const Combat = {
       const pots = this.potions(ch);
       prompt = `Drink which?\n` + (pots.map((o, i) => UI.key(LETTERS[i], ITEMS[o.it.id].name)).join("\n") || '<span class="dim">(no potions)</span>') + `\n${UI.key("L", "Back")}`;
     }
-    UI.panel(`<h2>COMBAT — ROUND ${this.round + 1}</h2>${enemies}\n\n${prompt}`);
+    UI.panel(`<h2>COMBAT — ROUND ${this.round + 1}</h2>${enemies}${warns ? "\n" + warns : ""}\n\n${prompt}`);
   },
 
   key(k, e) {
@@ -284,6 +342,30 @@ const Combat = {
       }
     }
     this.surprising = false; this.surprised = false;
+    // telegraphed attacks that never happened — the payoff for focus fire
+    if (!fled && Game.party.some(isUp)) {
+      for (const g of this.groups) {
+        if (!g.intent || g.intentDone) continue;
+        const alive = this.aliveIn(g);
+        if (!alive.length) {
+          this.say(`The ${g.def.name} dies with its ${g.intent.kind === "breath" ? "breath still gathered" : "spell unfinished"}.`);
+          Events.emit("interrupt", { monster: g.def, how: "killed" });
+        } else if (alive.every(mm => mm.asleep || mm.para)) {
+          this.say(`The ${g.def.name} sleeps through its own ${g.intent.kind === "breath" ? "inhale" : "incantation"}.`);
+          Events.emit("interrupt", { monster: g.def, how: "incapacitated" });
+        }
+      }
+    }
+    for (const g of this.groups) { g.intent = null; g.intentDone = false; }
+    // named regenerators knit themselves back together
+    for (const g of this.groups) {
+      if (!g.elite || g.def.affix.key !== "REGENERATING") continue;
+      let healed = 0;
+      for (const mm of g.members) {
+        if (mm.hp > 0 && mm.hp < mm.maxhp) { const amt = Math.min(g.def.lvl, mm.maxhp - mm.hp); mm.hp += amt; healed += amt; }
+      }
+      if (healed) this.say(`${g.def.name} knits itself back together. (+${healed})`);
+    }
     // wake-up rolls
     for (const g of this.groups) for (const mm of g.members) {
       if (mm.hp > 0 && mm.asleep && pct(40)) { mm.asleep = false; }
@@ -444,33 +526,38 @@ const Combat = {
     const anyUp = Game.party.filter(isUp);
     if (!anyUp.length) return;
     const targetPool = front.length ? front : anyUp;
-    // spellcasters
-    if ((def.mage || def.priest) && !g.silenced && pct(50)) {
-      if (def.mage >= 3 && pct(50)) {
+    // telegraphed intent: the first able member of the group carries it out
+    if (g.intent && !g.intentDone) {
+      const intent = g.intent;
+      g.intentDone = true;
+      if (intent.kind !== "breath" && g.silenced) {
+        this.say(`The ${def.name}'s spell dies unspoken. Silence is golden.`);
+        Events.emit("interrupt", { monster: def, how: "silence" });
+        return;
+      }
+      if (intent.kind === "breath") {
+        this.say(`The ${def.name} breathes fire!`);
+        for (const ch of anyUp) {
+          let dmg = Math.max(1, Math.ceil(mm.hp / 2));
+          if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
+          this.hurt(ch, dmg, `is burned for ${dmg}`, { type: "breath", monster: def });
+        }
+      } else if (intent.kind === "mahalito") {
         this.say(`A ${def.name} casts MAHALITO!`);
         for (const ch of anyUp) {
           let dmg = dice("4d6");
           if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
           this.hurt(ch, dmg, `is scorched for ${dmg}`, { type: "monsterSpell", monster: def });
         }
-      } else if (def.mage && pct(40)) {
+      } else if (intent.kind === "katino") {
         this.say(`A ${def.name} casts KATINO!`);
         for (const ch of front) if (!ch.asleep && pct(45)) { ch.asleep = true; this.say(`${ch.name} falls asleep!`); }
-      } else {
+      } else if (intent.kind === "bolt") {
         const t = pick(targetPool);
         const isPriest = !!def.priest;
         const dmg = dice(isPriest ? (def.priest >= 2 ? "2d8" : "1d8") : "1d8");
         this.say(`A ${def.name} casts ${isPriest ? (def.priest >= 2 ? "BADIAL" : "BADIOS") : "HALITO"}!`);
         this.hurt(t, dmg, `takes ${dmg}`, { type: "monsterSpell", monster: def });
-      }
-      return;
-    }
-    if (def.breath && pct(40)) {
-      this.say(`The ${def.name} breathes fire!`);
-      for (const ch of anyUp) {
-        let dmg = Math.max(1, Math.ceil(mm.hp / 2));
-        if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
-        this.hurt(ch, dmg, `is burned for ${dmg}`, { type: "breath", monster: def });
       }
       return;
     }
@@ -501,12 +588,14 @@ const Combat = {
   },
 
   // ------------------------------------------------------------ victory & chests
+  goldMult() { return this.groups.some(g => g.elite && g.def.affix.key === "GILDED") ? 3 : 1; },
+  hadElite() { return this.groups.some(g => g.elite); },
   victory() {
     const alive = Game.party.filter(isUp);
     const share = Math.floor(this.xpTotal / Math.max(1, alive.length));
     const encLvl = Math.max(...this.groups.map(g => g.def.lvl));
     const map = getLevel(Game.maze.level);
-    const gold = dice("2d10") * map.depth * 5;
+    const gold = dice("2d10") * map.depth * 5 * this.goldMult();
     const gshare = Math.floor(gold / Math.max(1, alive.length));
     let anyScaled = false;
     for (const ch of alive) {
@@ -517,6 +606,7 @@ const Combat = {
     }
     Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level, encLvl });
     this.msgs = [`VICTORY!`, `Spoils: ${share} XP each${anyScaled ? " (reduced — these were beneath you)" : ""} and ${gshare} gold.`];
+    for (const g of this.groups) if (g.elite) this.msgs.push(`[SYSTEM] ${g.def.name} has been removed from the payroll.`);
     if (this.opts.boss) {
       Game.flags.boss = true;
       this.msgs.push("", "The Apprentice falls! Something glitters in the chamber beyond...");
@@ -526,7 +616,7 @@ const Combat = {
       if (ups) this.msgs.push(`${ch.name} is ready for a level (rest at the Inn).`);
     }
     UI.renderParty();
-    if (this.opts.lair || this.opts.boss || pct(40)) {
+    if (this.opts.lair || this.opts.boss || this.hadElite() || pct(40)) {
       this.phase = "msg"; this.endTo = "chest"; this.msgs.push("", "The monsters were guarding a CHEST!");
       const oldAfter = this.afterMsgs.bind(this);
       this.afterMsgs = () => { this.afterMsgs = oldAfter; this.openChestUI(); };
@@ -624,14 +714,14 @@ const Combat = {
   loot(ch) {
     this.chest.done = true;
     const map = getLevel(Game.maze.level);
-    const gold = dice("3d10") * 10 * map.depth;
+    const gold = dice("3d10") * 10 * map.depth * this.goldMult();
     const alive = Game.party.filter(isUp);
     const share = Math.floor(gold / Math.max(1, alive.length));
     for (const p of alive) grantGold(p, Math.floor(share * (100 + mod(p, "goldGain")) / 100), "chest");
     UI.log(`The chest holds ${gold} gold! (${share} each)`);
     let itemName = null;
-    if (this.opts.lair || this.opts.boss || pct(35)) {
-      const q = Math.min(3, (map.depth >= 4 ? 1 : 0) + (this.opts.lair ? 1 : 0) + (this.opts.boss ? 2 : 0) + (pct(20) ? 1 : 0));
+    if (this.opts.lair || this.opts.boss || this.hadElite() || pct(35)) {
+      const q = Math.min(3, (map.depth >= 4 ? 1 : 0) + (this.opts.lair ? 1 : 0) + (this.opts.boss ? 2 : 0) + (this.hadElite() ? 1 : 0) + (pct(20) ? 1 : 0));
       const entry = generateItem(map.depth, q);
       ch.items.push(entry);
       itemName = IT(entry).name;
