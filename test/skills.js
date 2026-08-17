@@ -97,6 +97,11 @@ assert(get('skillEffectStr({ id: "BRAWLER", level: 2 })') === "+1.6 damage", "ef
 assert(get('skillEffectStr({ id: "GRAVE_MANNERS", level: 1 })') === "+2 damage vs undead", "vs-gated effect labeled");
 assert(get("UI.charSheet(__ftr)").includes("damage"), "sheet includes effect text");
 
+// --- AC stays an integer even with fractional skill scaling (log2 levels)
+run('__ftr.skills.push({ id: "WALL_SENSE", level: 2, uses: 100 }, { id: "PAIN_TOLERANCE", level: 4, uses: 800 });');
+assert(get("Number.isInteger(acOf(__ftr))"), "AC is an integer with fractional skill bonuses (got " + get("acOf(__ftr)") + ")");
+run('__ftr.skills = __ftr.skills.filter(s => s.id === "BRAWLER" || s.id === "DOOR_SHOULDERER" || s.id === "GRAVE_MANNERS");');
+
 // --- persistence: skills and pre-unlock progress survive save/load
 run('Events.emit("swing", { ch: __prs, hit: true, dmg: 1 });'); // priest starts brawling progress
 run("Game.save(); Game.load();");

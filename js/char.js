@@ -144,7 +144,7 @@ function acOf(ch) {
   }
   if (ch.cls === "Ninja" && !any) ac = 8 - Math.floor(ch.level / 2);
   ac -= (ch.tempAC || 0);
-  ac -= mod(ch, "ac");
+  ac -= Math.floor(mod(ch, "ac")); // skill/affix AC scales fractionally; AC itself stays an integer
   return ac;
 }
 function atkBonus(ch, ctx) {
