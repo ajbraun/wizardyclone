@@ -101,6 +101,10 @@ const Combat = {
     const m = Game.maze;
     Render.draw(getLevel(m.level), m.x, m.y, m.f, 3);
     UI.viewLabel("*** COMBAT ***");
+    if (this.phase !== "chest") {
+      const fg = (this.sub === "card" && this.inspectG) ? this.inspectG : this.aliveGroups()[0];
+      if (fg) Render.monsterBox(fg.def, this.aliveIn(fg).length);
+    }
     if (this.phase === "msg") {
       UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n<span class="k">[ SPACE ]</span>`);
       return;

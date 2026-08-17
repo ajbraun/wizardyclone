@@ -86,6 +86,7 @@ function genMonster(depth, rng, idx) {
     xp: Math.floor(30 * Math.pow(1.5, Math.min(lvl, 24)) + 25 * lvl),
     sleepResist: arch.undead ? 100 : Math.min(90, lvl * 5),
     lore: GEN_LORE[arch.key][Math.floor(rng() * GEN_LORE[arch.key].length)],
+    art: { brute: "brute", pack: "beast", caster: "caster", priest: "caster", breather: "drake", undead: "undead", stinger: "bug" }[arch.key],
   };
   if (arch.mage) def.mage = depth >= 6 ? 3 : 1;
   if (arch.priest) def.priest = 2;

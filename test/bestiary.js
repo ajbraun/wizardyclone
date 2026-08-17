@@ -34,6 +34,17 @@ run("Game.party[0].level = 8;");
 assert(get("monsterCard(MONSTERS.SHADE)").includes("paralytic touch"), "traits listed");
 assert(get("monsterCard(MONSTERS.SKELETON)").includes("technically deceased"), "undead trait listed");
 
+// portraits: every monster (campaign + generated) has an art archetype and draws
+run(`
+  var __artErr = [];
+  const KNOWN_ART = ["blob", "humanoid", "caster", "undead", "beast", "bug", "drake", "brute"];
+  for (const m of Object.values(MONSTERS)) {
+    if (!m.art || !KNOWN_ART.includes(m.art)) __artErr.push("bad art for " + m.id + ": " + m.art);
+    try { Render.monsterBox(m, 3); } catch (e) { __artErr.push("draw failed for " + m.id + ": " + e.message); }
+  }
+`);
+for (const e of get("__artErr")) assert(false, e);
+
 // combat flow: inspect is free (turn not consumed), then fight proceeds
 run(`
   Game.maze = { level: 1, x: 9, y: 18, f: 0, light: 0 };

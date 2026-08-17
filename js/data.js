@@ -134,6 +134,18 @@ const MONSTER_LORE = {
   APPRENTICE: "Werdna's intern: unpaid, overpowered, and auditioning for the job. End the interview.",
 };
 for (const k of Object.keys(MONSTER_LORE)) if (MONSTERS[k]) MONSTERS[k].lore = MONSTER_LORE[k];
+// portrait archetype for the combat monster window (see Render.monsterBox)
+const MONSTER_ART = {
+  SLIME: "blob", CRUD: "blob",
+  KOBOLD: "humanoid", ORC: "humanoid", ROGUE: "humanoid", BUSHWACKER: "humanoid", SAMURAI3: "humanoid",
+  MAGE1: "caster", PRIEST1: "caster", PRIEST3: "caster", MAGE5: "caster", APPRENTICE: "caster",
+  SKELETON: "undead", ZOMBIE: "undead", SHADE: "undead",
+  GIANTRAT: "beast", WOLF: "beast", WEREWOLF: "beast",
+  SPIDER: "bug", BEETLE: "bug",
+  DRAGONFLY: "drake",
+  GARGOYLE: "brute",
+};
+for (const k of Object.keys(MONSTER_ART)) if (MONSTERS[k]) MONSTERS[k].art = MONSTER_ART[k];
 // ---------------------------------------------------------------- skills
 // Registry of skill definitions (populated in phase 3). Characters store
 // {id, level, uses}; effects contribute through the mod() pipeline.
