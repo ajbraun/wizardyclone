@@ -25,6 +25,43 @@ const GEN_ARCH = [
   { key: "undead",  nouns: ["Wight", "Revenant", "Bone Knight"], hpD: 8, dmg: 1.0, num: "1d3", ac: 1, undead: true },
   { key: "stinger", nouns: ["Scorpion", "Widow", "Needle Wasp"], hpD: 6, dmg: 0.7, num: "1d4", ac: 1, poison: true },
 ];
+const GEN_LORE = {
+  brute: [
+    "All muscle and no small talk. Negotiations are conducted in blunt-force trauma.",
+    "It solved the dungeon's puzzles by being the wall.",
+    "Somewhere it has a family. They are also enormous and also angry.",
+  ],
+  pack: [
+    "They hunt in groups because the System gives them a bulk discount.",
+    "One is a nuisance. Four are a scheduling problem.",
+    "It has friends. That's the whole threat model.",
+  ],
+  caster: [
+    "Studied at an unaccredited tower. The fireballs are real, though.",
+    "Its wand is licensed. Its judgment is not.",
+    "It knows exactly one conversation-ender and it is on fire.",
+  ],
+  priest: [
+    "Middle management of a faith you don't want the details on.",
+    "It tithes in other people's blood.",
+    "The sermon is short. The harm spell is shorter.",
+  ],
+  breather: [
+    "A fire hazard with wings and opinions.",
+    "Workplace safety regulations do not operate at this depth.",
+    "It exhales what your armor merely delays.",
+  ],
+  undead: [
+    "Retired from life, not from violence.",
+    "It remembers being alive. It does not remember fondly.",
+    "Grief with a weapon rating.",
+  ],
+  stinger: [
+    "Evolution kept the worst parts and sharpened them.",
+    "The venom is complimentary. The antivenin is 300 gold.",
+    "It considers you a food-shaped scheduling opportunity.",
+  ],
+};
 const GEN_MSGS = [
   "A scrawl on the wall: 'THE SYSTEM THANKS YOU FOR YOUR CONTINUED DESCENT.'",
   "Claw marks on the floor, all pointing down.",
@@ -48,6 +85,7 @@ function genMonster(depth, rng, idx) {
     num: arch.num,
     xp: Math.floor(30 * Math.pow(1.5, Math.min(lvl, 24)) + 25 * lvl),
     sleepResist: arch.undead ? 100 : Math.min(90, lvl * 5),
+    lore: GEN_LORE[arch.key][Math.floor(rng() * GEN_LORE[arch.key].length)],
   };
   if (arch.mage) def.mage = depth >= 6 ? 3 : 1;
   if (arch.priest) def.priest = 2;

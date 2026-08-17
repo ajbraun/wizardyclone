@@ -140,6 +140,8 @@ ach("SKILLS_10", "Renaissance Crawler", "e:skillUnlock", 10, "Unlock 10 skills",
   "Ten skills. A well-rounded individual, if the roundness is mostly scar tissue.", { gold: 300, title: "Renaissance Crawler", box: "SILVER" });
 ach("SKILLUP_25", "Practice Makes Painful", "e:skillUp", 25, "Gain 25 skill levels",
   "Twenty-five skill-ups. Repetition is a teacher. A cruel, unlicensed teacher.", { gold: 250 });
+ach("INSPECT_25", "Know Thy Enemy", "e:inspectMonster", 25, "Inspect 25 monsters mid-fight",
+  "Twenty-five foes studied before stabbing. Scholarship is just violence with citations.", { gold: 150 });
 
 // -------------------------------------------------------------- wiring
 const Achievements = {

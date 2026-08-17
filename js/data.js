@@ -108,6 +108,32 @@ const MONSTERS = {
 };
 // give every monster def its own id (used by kill counters and achievements)
 for (const k of Object.keys(MONSTERS)) MONSTERS[k].id = k;
+// the System's bestiary notes — it sees all, it respects little
+const MONSTER_LORE = {
+  SLIME: "The dungeon's entry-level exam. It is somehow still killing people.",
+  KOBOLD: "Small, angry, and unionized. They get a group rate on ambushes.",
+  GIANTRAT: "A rodent of unusual size and unremarkable hygiene. The poison is complimentary.",
+  ORC: "Standard-issue dungeon muscle. Comes with a sword and a grudge it can't articulate.",
+  ROGUE: "Chose violence as a career and mediocrity as a specialty.",
+  SKELETON: "Someone's grandfather, weaponized. Sleep spells bounce off — the dead have had enough rest.",
+  ZOMBIE: "Slow, rotting, persistent. Like email.",
+  CRUD: "It's called Creeping Crud and it still wins fights. Reflect on that.",
+  MAGE1: "Owns one spell and the confidence of ten. The confidence is the dangerous part.",
+  PRIEST1: "Preaches briefly, harms immediately. Tithing is not optional.",
+  WOLF: "A dog that gave up on people. Two bites per opinion.",
+  BUSHWACKER: "A professional ambusher. The bush was never the point.",
+  SPIDER: "Eight legs, one agenda. The venom is included at no extra charge.",
+  PRIEST3: "Middle management of an unpleasant faith. Casts harm with a straight face.",
+  SAMURAI3: "Honor, discipline, and two attacks per round. Mostly the two attacks.",
+  GARGOYLE: "Architecture with a grudge. Three attacks, zero interest in your feelings.",
+  DRAGONFLY: "A flying grudge with a fire budget. Its breath scales with its health, which you will come to resent.",
+  BEETLE: "The 'Boring' refers to what it does to armor, not to conversation. Mostly.",
+  WEREWOLF: "A commitment issue with claws.",
+  SHADE: "What's left when a person subtracts the body. Its touch files your muscles under 'later.'",
+  MAGE5: "Finished the whole spellbook. MAHALITO is its love language.",
+  APPRENTICE: "Werdna's intern: unpaid, overpowered, and auditioning for the job. End the interview.",
+};
+for (const k of Object.keys(MONSTER_LORE)) if (MONSTERS[k]) MONSTERS[k].lore = MONSTER_LORE[k];
 // ---------------------------------------------------------------- skills
 // Registry of skill definitions (populated in phase 3). Characters store
 // {id, level, uses}; effects contribute through the mod() pipeline.

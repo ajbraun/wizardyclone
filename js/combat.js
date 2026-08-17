@@ -1,4 +1,31 @@
 "use strict";
+// the System's bestiary card: stats, traits, kill count, and editorial
+function monsterCard(def) {
+  const traits = [];
+  if (def.undead) traits.push("technically deceased (immune to sleep)");
+  else if ((def.sleepResist || 0) >= 90) traits.push("does not sleep");
+  if (def.poison) traits.push("venomous");
+  if (def.paralyze) traits.push("paralytic touch");
+  if (def.breath) traits.push("breathes fire (worse at full health)");
+  if (def.mage) traits.push(`casts mage spells (rank ${def.mage})`);
+  if (def.priest) traits.push(`casts priest spells (rank ${def.priest})`);
+  const kills = Game.counters["kill:" + def.id] || 0;
+  const alive = Game.party.filter(isUp);
+  const avg = alive.length ? alive.reduce((a, c) => a + c.level, 0) / alive.length : 1;
+  const diff = def.lvl - avg;
+  const assess = diff <= -5 ? "Beneath you. The XP will reflect that."
+    : diff <= -2 ? "A warm-up. Try not to make it weird."
+    : diff <= 1 ? "A fair fight. Someone here is about to be surprised."
+    : diff <= 4 ? "Punching up. Premium XP, premium funeral risk."
+    : "This will end poorly for someone. Statistically, you.";
+  return `<span class="hi">${esc(def.name.toUpperCase())}</span>  <span class="dim">[Level ${def.lvl}]</span>\n` +
+    `<span class="dim">"${esc(def.lore || "The System has no notes. It is as surprised as you are.")}"</span>\n\n` +
+    `AC ${def.ac}   HITS ${def.hp}   ATTACKS ${def.dmg.join(" / ")}\n` +
+    `TRAITS: ${traits.length ? esc(traits.join(", ")) : "none worth respecting"}\n` +
+    `XP VALUE ${def.xp} each   <span class="dim">SLAIN BY YOU: ${kills}</span>\n\n` +
+    `<span class="k">[SYSTEM ASSESSMENT]</span> ${esc(assess)}`;
+}
+
 const Combat = {
   groups: [], phase: "input", sub: "action", inputIdx: 0, actions: [],
   msgs: [], round: 0, xpTotal: 0, opts: {}, pendingSpell: null,
@@ -90,7 +117,12 @@ const Combat = {
       const canMelee = this.inputIdx < 3;
       prompt = `<span class="hi">${esc(ch.name)}</span>'s options:\n` +
         (canMelee ? `${UI.key("F", "Fight")}  ` : `<span class="dim">F) Fight (back row)</span>  `) +
-        `${UI.key("P", "Parry")}  ${UI.key("S", "Spell")}  ${UI.key("U", "Use potion")}  ${UI.key("R", "Run")}  ${UI.key("T", "Take back")}`;
+        `${UI.key("P", "Parry")}  ${UI.key("S", "Spell")}  ${UI.key("U", "Use potion")}  ${UI.key("I", "Inspect foe")}  ${UI.key("R", "Run")}  ${UI.key("T", "Take back")}`;
+    } else if (this.sub === "inspectGroup") {
+      prompt = `Inspect which group? <span class="k">(1-${this.groups.length})</span>  ${UI.key("L", "Back")}`;
+    } else if (this.sub === "card") {
+      UI.panel(monsterCard(this.inspectG.def) + `\n\n${UI.key("L", "Back")}`);
+      return;
     } else if (this.sub === "fightGroup") {
       prompt = `<span class="hi">${esc(ch.name)}</span> fights which group? <span class="k">(1-${this.meleeGroups().length})</span>`;
     } else if (this.sub === "spell") {
@@ -127,8 +159,30 @@ const Combat = {
       } else if (k === "p") { ch.parry = true; this.actions.push({ ch, type: "parry" }); this.advance(); }
       else if (k === "s") { this.sub = "spell"; this.draw(); }
       else if (k === "u") { this.sub = "potion"; this.draw(); }
+      else if (k === "i") {
+        const ag = this.aliveGroups();
+        if (ag.length === 1) { this.inspectG = ag[0]; this.sub = "card"; Events.emit("inspectMonster", { id: ag[0].def.id }); }
+        else this.sub = "inspectGroup";
+        this.draw();
+      }
       else if (k === "r") { this.actions.push({ ch, type: "run" }); this.resolveRound(); }
       else if (k === "t") this.beginInput();
+      return;
+    }
+    if (this.sub === "inspectGroup") {
+      if (k === "l") { this.sub = "action"; this.draw(); return; }
+      const i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < this.groups.length) {
+        this.inspectG = this.groups[i];
+        this.sub = "card";
+        Events.emit("inspectMonster", { id: this.inspectG.def.id });
+        this.draw();
+      }
+      return;
+    }
+    if (this.sub === "card") {
+      this.sub = "action";
+      this.draw();
       return;
     }
     if (this.sub === "fightGroup") {
