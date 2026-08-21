@@ -42,11 +42,36 @@ const EdgeScreen = {
     const s = Game.flags.sanctums || [];
     return s.length ? s.reduce((a, b) => (b.level > a.level ? b : a)) : null;
   },
+  // every way into the maze the party has earned so far
+  entrances() {
+    const list = [{
+      label: "The stairs (Level 1)",
+      go: () => { const st = LEVELS[1].start; this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 }); },
+    }];
+    if (Game.flags.boss) list.push({
+      label: "The Hatch (Floor 4)",
+      go: () => {
+        const u = findSpecial(getLevel(4), "up");
+        UI.log("[SYSTEM] Express service to the Hatch. The invoice is in the mail.");
+        this.enterMaze({ level: 4, x: u.x, y: u.y, f: 2, light: 0 });
+      },
+    });
+    const s = this.deepestSanctum();
+    if (s) list.push({
+      label: `System elevator to the Floor ${s.level} sanctum`,
+      go: () => {
+        getLevel(s.level); // ensure the floor (and its monsters) exist
+        UI.log(`[SYSTEM] Elevator descending to floor ${s.level}. Mind the everything.`);
+        this.enterMaze({ level: s.level, x: s.x, y: s.y, f: 0, light: 0 });
+      },
+    });
+    return list;
+  },
   draw() {
     Render.blank("EDGE OF TOWN");
     if (this.mode === "enter") {
-      const s = this.deepestSanctum();
-      UI.panel(`<h2>ENTER THE MAZE</h2>\n${UI.key(1, "The stairs (Level 1)")}\n${UI.key(2, `System elevator to the Floor ${s.level} sanctum`)}\n\n${UI.key("L", "Back")}`);
+      const opts = this.entrances();
+      UI.panel(`<h2>ENTER THE MAZE</h2>\n` + opts.map((o, i) => UI.key(String(i + 1), o.label)).join("\n") + `\n\n${UI.key("L", "Back")}`);
       return;
     }
     UI.panel(`<h2>EDGE OF TOWN</h2>\n${UI.key("T", "Training Grounds")}\n${UI.key("M", "The Maze")}\n${UI.key("C", "Castle")}\n${UI.key("L", "Leave Game (save)")}`);
@@ -54,18 +79,16 @@ const EdgeScreen = {
   enterMaze(start) {
     UI.log("Your party descends into the maze...");
     Game.maze = start;
+    const map = getLevel(start.level);
+    if (map.mod) UI.log(map.mod.announce);
     Game.go(MazeScreen);
   },
   key(k) {
     if (this.mode === "enter") {
       if (k === "l") { this.mode = "menu"; this.draw(); return; }
-      const s = this.deepestSanctum();
-      if (k === "1") { const st = LEVELS[1].start; this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 }); }
-      else if (k === "2" && s) {
-        getLevel(s.level); // ensure the floor (and its monsters) exist
-        UI.log(`[SYSTEM] Elevator descending to floor ${s.level}. Mind the everything.`);
-        this.enterMaze({ level: s.level, x: s.x, y: s.y, f: 0, light: 0 });
-      }
+      const opts = this.entrances();
+      const i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < opts.length) opts[i].go();
       return;
     }
     if (k === "t") Game.go(TrainingScreen);
@@ -73,7 +96,7 @@ const EdgeScreen = {
     else if (k === "m") {
       if (!Game.party.some(isUp)) { UI.log("You need an able-bodied party to enter the maze."); return; }
       if (Game.maze) { Game.go(MazeScreen); return; } // resume saved expedition
-      if (this.deepestSanctum()) { this.mode = "enter"; this.draw(); return; }
+      if (this.entrances().length > 1) { this.mode = "enter"; this.draw(); return; }
       const st = LEVELS[1].start;
       this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 });
     } else if (k === "l") { Game.save(); Game.go(TitleScreen); }

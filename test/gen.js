@@ -173,7 +173,8 @@ assert(get("Game.state === CastleScreen"), "at the castle");
 // edge of town offers elevator re-entry
 press("e"); press("m");
 assert(get("EdgeScreen.mode") === "enter", "entry choice offered");
-press("2");
+assert(H.els["panel"].innerHTML.includes("The Hatch (Floor 4)"), "hatch entrance offered post-boss");
+press("3");
 assert(get("Game.maze && Game.maze.level === 6"), "elevator drops at floor 6 sanctum");
 
 // --- automap: seen tracking + draw
