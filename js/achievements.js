@@ -90,6 +90,16 @@ ach("DEPTH_20", "No Bottom in Sight", "maxDepth", 20, "Reach floor 20",
   "Twenty floors down and still descending. The System has stopped taking bets.", { box: "PLATINUM", title: "The Descent Itself" });
 ach("CAMPS_10", "Outdoorsy", "e:camp", 10, "Make camp 10 times",
   "Ten naps on a dungeon floor. The inn misses you. The floor does not.", { gold: 50 });
+ach("STREAK_5", "No Brakes", "maxStreak", 5, "Hold a 5-floor depth streak",
+  "Five floors without daylight. The System has updated your emergency contact to 'N/A'.", { gold: 300 });
+ach("STREAK_10", "Terminal Velocity", "maxStreak", 10, "Hold a 10-floor depth streak",
+  "Maximum streak. The surface is a rumor you once believed in.", { box: "GOLD", title: "Terminal Velocity" });
+ach("SHRINES_10", "Faith-Based Initiative", "e:shrine", 10, "Pray at 10 shrines",
+  "Ten prayers, assorted results. The System calls this 'engagement.'", { gold: 200 });
+ach("REMAINS_10", "Estate Executor", "e:remains", 10, "Search the remains of 10 crawlers",
+  "You inherit whatever they couldn't carry out. It's tradition now.", { gold: 200 });
+ach("VAULTS_5", "Repossession Agent", "e:vault", 5, "Crack 5 System vaults",
+  "Five vaults emptied. The guardians were the security deposit.", { box: "SILVER" });
 
 // -------------------------------------------------------------- death & misfortune
 ach("DEATH_1", "Everybody Dies Once", "deaths", 1, "Lose a party member",
@@ -217,6 +227,7 @@ Events.on("trap", p => Game.count(p.disarmed ? "trapsDisarmed" : "trapsTriggered
 Events.on("flee", p => { if (p.ok) Game.count("flees"); });
 Events.on("victory", p => { if (p.boss) Game.count("bossKills"); });
 Events.on("descend", p => { Game.counters.maxDepth = Math.max(Game.counters.maxDepth || 1, p.to); });
+Events.on("streak", p => { Game.counters.maxStreak = Math.max(Game.counters.maxStreak || 0, p.count); });
 Events.on("levelup", p => { Game.counters.maxLevel = Math.max(Game.counters.maxLevel || 1, p.level); });
 // every event: bump the e:* counter, then evaluate achievements
 Events.onAny(type => { Game.count("e:" + type); Achievements.checkAll(); });

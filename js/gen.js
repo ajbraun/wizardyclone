@@ -83,6 +83,15 @@ function floorMod() {
   const map = Game.maze ? getLevel(Game.maze.level) : null;
   return (map && map.mod) || {};
 }
+// found on the remains of less fortunate crawlers
+const REMAINS_NOTES = [
+  "A final journal entry: 'The vault was a mimic. The mimic was also—'",
+  "Their map is meticulous until this floor, where it just says 'NO.'",
+  "They died holding a receipt. The System honors receipts.",
+  "A note: 'Tell Steve the elevator was NOT faster.'",
+  "Their last words, carved neatly: 'Almost had him.'",
+  "An unsent letter home. It's mostly apologies and loot coordinates.",
+];
 const GEN_MSGS = [
   "A scrawl on the wall: 'THE SYSTEM THANKS YOU FOR YOUR CONTINUED DESCENT.'",
   "Claw marks on the floor, all pointing down.",
@@ -182,6 +191,18 @@ function genLevel(n) {
   for (let i = 0; i < 2; i++) {
     const x = ri(20), y = ri(20);
     if (!m.specials[x + "," + y]) sp(m, x, y, { t: "msg", msg: GEN_MSGS[ri(GEN_MSGS.length)] });
+  }
+  // points of interest: things worth finding that aren't the stairs
+  const pois = [];
+  if (rng() < 0.65) pois.push({ t: "shrine" });
+  if (rng() < 0.4) pois.push({ t: "kiosk" });
+  if (n >= 6 && rng() < 0.35) pois.push({ t: "vault" });
+  if (rng() < 0.6) pois.push({ t: "remains", note: REMAINS_NOTES[ri(REMAINS_NOTES.length)] });
+  for (const p of pois) {
+    for (let tries = 0; tries < 20; tries++) {
+      const x = ri(20), y = ri(20);
+      if (!m.specials[x + "," + y]) { sp(m, x, y, p); break; }
+    }
   }
   // monsters
   const ids = [];

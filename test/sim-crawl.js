@@ -37,7 +37,7 @@ assert(get("Game.party.length") === 6, "party of 6");
 
 press("e"); press("m");
 const Game = get("Game");
-const MazeScreen = get("MazeScreen"), CombatScreen = get("CombatScreen"), CampScreen = get("CampScreen");
+const MazeScreen = get("MazeScreen"), CombatScreen = get("CombatScreen"), CampScreen = get("CampScreen"), KioskScreen = get("KioskScreen");
 const SPELLS = get("SPELLS");
 let chests = 0, victories = 0;
 for (let steps = 0; steps < 12000 && Game.maze; steps++) {
@@ -79,6 +79,7 @@ for (let steps = 0; steps < 12000 && Game.maze; steps++) {
     continue;
   }
   if (st === CampScreen) { press("l"); continue; }
+  if (st === KioskScreen) { if (Math.random() < 0.3) press("1"); press("l"); continue; }
   break;
 }
 console.log(`victories: ${victories}, chests: ${chests}`);

@@ -1,4 +1,23 @@
 "use strict";
+// ---------------------------------------------------------------- depth streak
+// +10% spoils per new floor (4+) entered this expedition, capped at +100%.
+// Lives on Game.maze, so surfacing — by any route — ends it.
+function streakCount() {
+  return Game.maze && Game.maze.streakFloors ? Object.keys(Game.maze.streakFloors).length : 0;
+}
+function streakMult() { return 1 + 0.1 * Math.min(10, streakCount()); }
+function streakVisit(level) {
+  if (level <= 3 || !Game.maze) return;
+  Game.maze.streakFloors = Game.maze.streakFloors || {};
+  if (Game.maze.streakFloors[level]) return;
+  Game.maze.streakFloors[level] = 1;
+  const n = streakCount();
+  UI.log(`[SYSTEM] Depth streak ${n}: spoils +${Math.min(10, n) * 10}%. Surfacing forfeits it.`);
+  Events.emit("streak", { count: n });
+}
+// one-shot points of interest persist their spent state in Game.flags
+function poiFlag(m) { return "poi" + m.level + "_" + m.x + "," + m.y; }
+
 function findSpecial(map, type) {
   for (const [k, s] of Object.entries(map.specials)) {
     if (s.t === type) {
@@ -19,7 +38,8 @@ const MazeScreen = {
     const map = getLevel(m.level);
     markSeen(m.level, m.x, m.y);
     Render.draw(map, m.x, m.y, m.f, m.light > 0 ? 4 : 3);
-    UI.viewLabel(`MAZE  LEVEL ${m.level}${map.mod ? `  [${map.mod.name}]` : ""}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
+    const st = streakCount();
+    UI.viewLabel(`MAZE  LEVEL ${m.level}${map.mod ? `  [${map.mod.name}]` : ""}${st ? `  STREAK+${Math.min(10, st) * 10}%` : ""}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
     const spc = map.specials[m.x + "," + m.y];
     let prompt = "";
     if (spc && spc.t === "up") {
@@ -31,7 +51,16 @@ const MazeScreen = {
         ? `\n<span class="dim">A sealed hatch. Something powerful holds it shut.</span>`
         : `\n<span class="k">Stairs DOWN. Press ENTER to descend.</span>`;
     } else if (spc && spc.t === "sanctum") {
-      prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle</span>`;
+      const st = streakCount();
+      prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle${st ? ` (forfeits +${Math.min(10, st) * 10}% streak)` : ""}</span>`;
+    } else if (spc && spc.t === "shrine" && !Game.flags[poiFlag(m)]) {
+      prompt = `\n<span class="gold">A SHRINE hums with conditional love.</span>\n<span class="k">ENTER) Pray</span>`;
+    } else if (spc && spc.t === "kiosk") {
+      prompt = `\n<span class="gold">A SYSTEM KIOSK glows expectantly.</span>\n<span class="k">ENTER) Browse</span>`;
+    } else if (spc && spc.t === "vault" && !Game.flags[poiFlag(m)]) {
+      prompt = `\n<span class="gold">A SYSTEM VAULT. Something named is on retainer inside.</span>\n<span class="k">ENTER) Open it</span>`;
+    } else if (spc && spc.t === "remains" && !Game.flags[poiFlag(m)]) {
+      prompt = `\n<span class="k">The remains of a less fortunate crawler. ENTER) Search them</span>`;
     } else if (spc && spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
       prompt = `\n<span class="gold">A jeweled AMULET rests on a pedestal! Press ENTER to take it.</span>`;
     }
@@ -69,9 +98,10 @@ const MazeScreen = {
         } else {
           const prev = getLevel(m.level - 1);
           const d = findSpecial(prev, "down");
-          Game.maze = { level: m.level - 1, x: d.x, y: d.y, f: 0, light: m.light, sanc: m.sanc };
+          Game.maze = { level: m.level - 1, x: d.x, y: d.y, f: 0, light: m.light, sanc: m.sanc, streakFloors: m.streakFloors };
           UI.log(`You climb to level ${m.level - 1}.`);
           if (prev.mod) UI.log(prev.mod.announce);
+          streakVisit(m.level - 1);
           Events.emit("ascend", { to: m.level - 1 });
           this.draw();
         }
@@ -82,10 +112,11 @@ const MazeScreen = {
         }
         const nxt = getLevel(m.level + 1);
         const u = findSpecial(nxt, "up");
-        Game.maze = { level: m.level + 1, x: u.x, y: u.y, f: 2, light: m.light, sanc: m.sanc };
+        Game.maze = { level: m.level + 1, x: u.x, y: u.y, f: 2, light: m.light, sanc: m.sanc, streakFloors: m.streakFloors };
         UI.log(`You descend to level ${m.level + 1}...`);
         if (m.level + 1 > 3) UI.log("[SYSTEM] Welcome to the Crawl. The floors below are... enthusiastic.");
         if (nxt.mod) UI.log(nxt.mod.announce);
+        streakVisit(m.level + 1);
         Events.emit("descend", { to: m.level + 1 });
         this.draw();
       } else if (spc.t === "sanctum") {
@@ -107,6 +138,49 @@ const MazeScreen = {
         Game.save();
         UI.renderParty();
         this.draw();
+      } else if (spc.t === "shrine" && !Game.flags[poiFlag(m)]) {
+        Game.flags[poiFlag(m)] = true;
+        Events.emit("shrine", { level: m.level });
+        const r = rnd(100);
+        if (r < 40) {
+          for (const ch of Game.party) if (isUp(ch)) { ch.hp = ch.maxhp; if (ch.status === "POISONED") ch.status = "OK"; }
+          UI.log("[SYSTEM] The shrine approves of your groveling. Full restoration. No warranty.");
+        } else if (r < 65) {
+          const g = 40 * map.depth;
+          for (const ch of Game.party) if (isUp(ch)) grantGold(ch, g, "shrine");
+          UI.log(`[SYSTEM] The shrine dispenses ${g} gold apiece. Faith, monetized.`);
+        } else if (r < 80) {
+          UI.log("[SYSTEM] The shrine coughs up a BRONZE loot box. It expects a review.");
+          openLootBox("BRONZE", map.depth);
+        } else {
+          const tithe = 30 * map.depth;
+          spendPartyGold(Math.min(partyGold(), tithe), "shrine");
+          const up = Game.party.filter(isUp);
+          const victim = up.length ? pick(up) : null;
+          if (victim && victim.status === "OK") { victim.status = "POISONED"; UI.log(`${victim.name} is poisoned by sanctified fumes!`); }
+          UI.log(`[SYSTEM] The shrine was a donations audit. ${tithe} gold, collected with prejudice.`);
+        }
+        Game.save(); UI.renderParty(); this.draw();
+      } else if (spc.t === "kiosk") {
+        Game.go(KioskScreen);
+      } else if (spc.t === "vault" && !Game.flags[poiFlag(m)]) {
+        UI.log("The vault door grinds open. The guardian was told you'd come.");
+        Combat.start({ vault: true, vaultKey: poiFlag(m) });
+      } else if (spc.t === "remains" && !Game.flags[poiFlag(m)]) {
+        Game.flags[poiFlag(m)] = true;
+        Events.emit("remains", { level: m.level });
+        UI.log(spc.note || "The remains have nothing left to say.");
+        const gold = dice("2d10") * 5 * map.depth;
+        const up = Game.party.filter(isUp);
+        const share = Math.floor(gold / Math.max(1, up.length));
+        for (const ch of up) grantGold(ch, share, "remains");
+        UI.log(`You recover ${gold} gold. (${share} each)`);
+        if (pct(35) && up.length) {
+          const entry = generateItem(map.depth, 1);
+          up[0].items.push(entry);
+          UI.log(`${up[0].name} pries loose: ${IT(entry).name}!`);
+        }
+        Game.save(); UI.renderParty(); this.draw();
       } else if (spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
         Game.flags.won = true;
         Events.emit("won", {});
@@ -166,6 +240,42 @@ const MazeScreen = {
   },
 };
 
+// ---------------------------------------------------------------- kiosk
+// A System vending machine in the deep: two potions per kiosk, convenience
+// pricing. The party's pooled gold pays; the first able member carries.
+const KioskScreen = {
+  stock() {
+    const m = Game.maze;
+    const base = "kiosk" + m.level + "_" + m.x + "," + m.y + "_";
+    return [
+      { id: "P_DIOS", price: 750, flag: base + "DIOS" },
+      { id: "P_LATUMOFIS", price: 450, flag: base + "LATU" },
+    ];
+  },
+  draw() {
+    UI.viewLabel("SYSTEM KIOSK");
+    const rows = this.stock().map((s, i) => {
+      if (Game.flags[s.flag]) return `<span class="dim">${i + 1}) ${pad(ITEMS[s.id].name, 22)} SOLD OUT</span>`;
+      return UI.key(String(i + 1), `${pad(ITEMS[s.id].name, 22)} ${s.price} gold`);
+    }).join("\n");
+    UI.panel(`<h2>SYSTEM KIOSK</h2>\n<span class="dim">"Convenience is a service. Services have fees." — The System</span>\n\n${rows}\n\n<span class="dim">Party gold: ${partyGold()}</span>\n\n${UI.key("L", "Leave")}`);
+  },
+  key(k) {
+    if (k === "l") { Game.go(MazeScreen); return; }
+    const i = parseInt(k, 10) - 1;
+    const s = this.stock()[i];
+    if (!s || Game.flags[s.flag]) return;
+    if (partyGold() < s.price) { UI.log("[SYSTEM] Insufficient funds. The kiosk's sympathy module was never installed."); return; }
+    spendPartyGold(s.price, "kiosk");
+    const holder = Game.party.filter(isUp)[0];
+    holder.items.push({ id: s.id });
+    Game.flags[s.flag] = true;
+    UI.log(`${holder.name} buys a ${ITEMS[s.id].name}. The kiosk thanks no one.`);
+    Events.emit("kiosk", { id: s.id, price: s.price });
+    Game.save(); UI.renderParty(); this.draw();
+  },
+};
+
 // ---------------------------------------------------------------- automap
 const MapScreen = {
   draw() {
@@ -179,7 +289,7 @@ const MapScreen = {
     }
     Render.drawMap(map, Game.seen[m.level] || {}, m.x, m.y, m.f);
     UI.viewLabel(`MAP  LEVEL ${m.level}`);
-    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; stairs up   &gt; stairs down   S sanctum   D door</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
+    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; up   &gt; down   S sanctum   + shrine   $ kiosk   V vault   † remains</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
   },
   key(k, e) {
     if (k === "m" || k === "l" || e.key === "Escape") Game.go(MazeScreen);

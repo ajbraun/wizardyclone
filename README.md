@@ -29,6 +29,12 @@ no dependencies. Saves live in your browser's localStorage.
   introduction, an affix, and a guaranteed chest.
 - **Floor modifiers** — half the Crawl runs under a house rule the System
   announces on arrival: BLOOD SURCHARGE, BLACKOUT, RUSH HOUR, AUDIT SEASON...
+- **Things worth finding** — shrines with conditional love, System kiosks
+  with convenience pricing, vaults with named guardians on retainer, and the
+  remains of crawlers who almost made it.
+- **The depth streak** — +10% spoils per new floor this expedition, up to
+  double. Riding the elevator home forfeits it. The System mentions this
+  every time, helpfully.
 - **Automap** — press `M`. Fog-of-war: it only knows where you've walked.
 
 ## Controls

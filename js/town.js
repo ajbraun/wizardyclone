@@ -81,6 +81,7 @@ const EdgeScreen = {
     Game.maze = start;
     const map = getLevel(start.level);
     if (map.mod) UI.log(map.mod.announce);
+    streakVisit(start.level);
     Game.go(MazeScreen);
   },
   key(k) {

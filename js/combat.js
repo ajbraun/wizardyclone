@@ -54,6 +54,9 @@ const Combat = {
     if (this.opts.boss) {
       this.addGroup("APPRENTICE", 1);
       this.addGroup("MAGE5", d(2));
+    } else if (this.opts.vault) {
+      this.addGroup(pickWeighted(map.table));
+      this.addElite(map);
     } else {
       this.addGroup(pickWeighted(map.table));
       const extra = this.opts.lair ? 100 : [0, 25, 40, 55][map.depth];
@@ -71,7 +74,7 @@ const Combat = {
     }
     Events.emit("encounter", { groups: this.groups.map(g => g.def), boss: !!this.opts.boss, lair: !!this.opts.lair, level: Game.maze.level });
     this.surprised = false; this.surprising = false;
-    if (!this.opts.boss) {
+    if (!this.opts.boss && !this.opts.vault) {
       const r = rnd(100);
       if (r < 15) { this.surprising = true; UI.log("You surprise them!"); }
       else if (r < 25) { this.surprised = true; UI.log("You are surprised!"); }
@@ -273,7 +276,8 @@ const Combat = {
     }
     if (this.sub === "spellGroup") {
       const i = parseInt(k, 10) - 1;
-      if (i >= 0 && i < this.groups.length && this.aliveIn(this.groups[i]).length) {
+      // a dead group is accepted — castCombatSpell retargets to a live one
+      if (i >= 0 && i < this.groups.length) {
         this.actions.push({ ch, type: "spell", spell: this.pendingSpell, group: this.groups[i] });
         this.advance();
       }
@@ -594,10 +598,10 @@ const Combat = {
   victory() {
     const alive = Game.party.filter(isUp);
     const fm = floorMod();
-    const share = Math.floor(this.xpTotal * (fm.xpMult || 1) / Math.max(1, alive.length));
+    const share = Math.floor(this.xpTotal * (fm.xpMult || 1) * streakMult() / Math.max(1, alive.length));
     const encLvl = Math.max(...this.groups.map(g => g.def.lvl));
     const map = getLevel(Game.maze.level);
-    const gold = Math.floor(dice("2d10") * map.depth * 5 * this.goldMult() * (fm.goldMult || 1));
+    const gold = Math.floor(dice("2d10") * map.depth * 5 * this.goldMult() * (fm.goldMult || 1) * streakMult());
     const gshare = Math.floor(gold / Math.max(1, alive.length));
     let anyScaled = false;
     for (const ch of alive) {
@@ -609,6 +613,11 @@ const Combat = {
     Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level, encLvl });
     this.msgs = [`VICTORY!`, `Spoils: ${share} XP each${anyScaled ? " (reduced — these were beneath you)" : ""} and ${gshare} gold.`];
     for (const g of this.groups) if (g.elite) this.msgs.push(`[SYSTEM] ${g.def.name} has been removed from the payroll.`);
+    if (this.opts.vaultKey && !Game.flags[this.opts.vaultKey]) {
+      Game.flags[this.opts.vaultKey] = true;
+      Events.emit("vault", { level: Game.maze.level });
+      this.msgs.push("", "The vault stands open. The guardian's severance is yours.");
+    }
     if (this.opts.boss) {
       Game.flags.boss = true;
       this.msgs.push("", "The Apprentice falls! Something glitters in the chamber beyond...");
@@ -717,14 +726,14 @@ const Combat = {
     this.chest.done = true;
     const map = getLevel(Game.maze.level);
     const fm = floorMod();
-    const gold = Math.floor(dice("3d10") * 10 * map.depth * this.goldMult() * (fm.chestGoldMult || fm.goldMult || 1));
+    const gold = Math.floor(dice("3d10") * 10 * map.depth * this.goldMult() * (fm.chestGoldMult || fm.goldMult || 1) * streakMult());
     const alive = Game.party.filter(isUp);
     const share = Math.floor(gold / Math.max(1, alive.length));
     for (const p of alive) grantGold(p, Math.floor(share * (100 + mod(p, "goldGain")) / 100), "chest");
     UI.log(`The chest holds ${gold} gold! (${share} each)`);
     let itemName = null;
     if (this.opts.lair || this.opts.boss || this.hadElite() || pct(35)) {
-      const q = Math.min(3, (map.depth >= 4 ? 1 : 0) + (this.opts.lair ? 1 : 0) + (this.opts.boss ? 2 : 0) + (this.hadElite() ? 1 : 0) + (pct(20) ? 1 : 0));
+      const q = Math.min(3, (map.depth >= 4 ? 1 : 0) + (this.opts.lair ? 1 : 0) + (this.opts.boss ? 2 : 0) + (this.opts.vault ? 1 : 0) + (this.hadElite() ? 1 : 0) + (pct(20) ? 1 : 0));
       const entry = generateItem(map.depth, q);
       ch.items.push(entry);
       itemName = IT(entry).name;

@@ -108,11 +108,12 @@ const Render = (() => {
         if (w[2]) seg(cx, cy + s, cx + s, cy + s, w[2] === 2);
         if (w[3]) seg(cx, cy, cx, cy + s, w[3] === 2);
         const spc = map.specials[x + "," + y];
-        if (spc && ["up", "down", "sanctum"].includes(spc.t)) {
+        const mark = spc && { up: "<", down: ">", sanctum: "S", shrine: "+", kiosk: "$", vault: "V", remains: "†" }[spc.t];
+        if (mark) {
           ctx.fillStyle = "#ffd700";
           ctx.font = "12px Menlo, monospace";
           ctx.textAlign = "center";
-          ctx.fillText(spc.t === "up" ? "<" : spc.t === "down" ? ">" : "S", cx + s / 2, cy + s - 4);
+          ctx.fillText(mark, cx + s / 2, cy + s - 4);
         }
       }
     }

@@ -99,11 +99,13 @@ assert(get("Combat.chest.trap") === null, "normal floor: 99 roll means no trap")
 run(`Game.maze.level = __find.DARK; Game.maze.x = 1; Game.maze.y = 1; MapScreen.draw();`);
 assert(H.els["panel"].innerHTML.includes("SIGNAL LOST"), "blackout floor kills the automap");
 run(`Game.maze.level = 1; MapScreen.draw();`);
-assert(H.els["panel"].innerHTML.includes("stairs up"), "normal automap still renders");
+assert(H.els["panel"].innerHTML.includes("sanctum"), "normal automap still renders");
 
 // --- arrival announcement + header badge, through the real descend flow
 run("Math.random = () => 0.5;");
 run(`
+  // silence achievement/loot-box spam so the announcement stays in the log window
+  for (const a of ACHIEVEMENTS) Game.achievements[a.id] = 1;
   var __target = 0;
   for (let n = 6; n <= 200; n++) if (getLevel(n).mod) { __target = n; break; }
   const prev = getLevel(__target - 1);
