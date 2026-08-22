@@ -122,4 +122,26 @@ run("Combat.xpTotal = 100; Combat.victory();");
 assert(get("Combat.msgs.join(' ')").includes("removed from the payroll"), "the System notes the elite's death");
 assert(get("Combat.msgs.join(' ')").includes("CHEST"), "elites always guard a chest");
 
+// --- fight targeting uses enemy-list numbers; rank rules still hold
+run(`
+  Combat.opts = {}; Combat.groups = [];
+  Combat.addGroup("ORC", 2); Combat.addGroup("WOLF", 2); Combat.addGroup("KOBOLD", 2);
+  Combat.groups[0].members.forEach(mm => mm.hp = 0); // front group slain
+  Combat.round = 0; Combat.msgs = []; Combat.intentRound = -1;
+  Combat.surprised = false; Combat.surprising = false;
+  Combat.beginInput();
+`);
+press("f");
+assert(get("Combat.sub") === "fightGroup", "multiple living groups ask for a target");
+assert(H.els["panel"].innerHTML.includes("(2, 3 in melee reach)"), "prompt lists absolute group numbers");
+press("3");
+assert(get("Combat.actions[0].group.def.id") === "KOBOLD", "pressing 3 targets the group labeled 3");
+run(`
+  Combat.phase = "input"; Combat.inputIdx = 0; Combat.actions = [];
+  Combat.sub = "fightGroup";
+  Combat.groups[0].members.forEach(mm => mm.hp = 0); // may have woken from resolution
+`);
+press("1"); // slain group: auto-retarget instead of dead-end
+assert(get("Combat.actions.length") === 1 && get("Combat.actions[0].group.def.id") === "WOLF", "dead group number retargets to the first living group");
+
 done();

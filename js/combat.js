@@ -172,7 +172,8 @@ const Combat = {
       const status = n === 0 ? ' <span class="dim">(slain)</span>' : g.members.some(mm => mm.hp > 0 && (mm.asleep || mm.para)) ? ' <span class="k">(incapacitated)</span>' : "";
       const label = g.elite ? `<span class="gold">${this.groupLabel(g)}</span>` : this.groupLabel(g);
       const intent = n > 0 && g.intent && !g.intentDone ? ` <span class="bad">[${g.intent.label}]</span>` : "";
-      return `  ${i + 1}) ${n === 0 ? '<span class="dim">' : ""}${label}${n === 0 ? "</span>" : ""}${status}${intent}`;
+      const reach = n > 0 && !this.meleeGroups().includes(g) ? ' <span class="dim">(out of melee reach)</span>' : "";
+      return `  ${i + 1}) ${n === 0 ? '<span class="dim">' : ""}${label}${n === 0 ? "</span>" : ""}${status}${reach}${intent}`;
     }).join("\n");
     const warns = this.phase === "input" ? this.groups
       .filter(g => this.aliveIn(g).length && g.intent && !g.intentDone)
@@ -190,7 +191,8 @@ const Combat = {
       UI.panel(monsterCard(this.inspectG.def) + `\n\n${UI.key("L", "Back")}`);
       return;
     } else if (this.sub === "fightGroup") {
-      prompt = `<span class="hi">${esc(ch.name)}</span> fights which group? <span class="k">(1-${this.meleeGroups().length})</span>`;
+      const nums = this.meleeGroups().map(g => this.groups.indexOf(g) + 1);
+      prompt = `<span class="hi">${esc(ch.name)}</span> fights which group? <span class="k">(${nums.join(", ")} in melee reach)</span>`;
     } else if (this.sub === "spell") {
       const list = this.combatSpells(ch);
       prompt = `<span class="hi">${esc(ch.name)}</span> casts...\n` + (list.map((s, i) => {
@@ -252,9 +254,13 @@ const Combat = {
       return;
     }
     if (this.sub === "fightGroup") {
+      // numbers match the enemy list; only the first two living groups are in reach
       const i = parseInt(k, 10) - 1;
+      const g = this.groups[i];
+      if (!g) return;
       const mg = this.meleeGroups();
-      if (i >= 0 && i < mg.length) { this.actions.push({ ch, type: "fight", group: mg[i] }); this.advance(); }
+      if (mg.includes(g)) { this.actions.push({ ch, type: "fight", group: g }); this.advance(); }
+      else if (!this.aliveIn(g).length) { this.actions.push({ ch, type: "fight", group: mg[0] }); this.advance(); }
       return;
     }
     if (this.sub === "spell") {
