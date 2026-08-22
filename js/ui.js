@@ -59,7 +59,7 @@ const UI = (() => {
       ? ch.items.map((it, i) => {
           const st = IT(it);
           const usable = canUseItem(ch, it.id) ? "" : " #";
-          return `  ${i + 1}) ${it.eq ? "*" : " "}${esc(st.name)}${usable}`;
+          return `  ${LETTERS[i] || "?"}) ${it.eq ? "*" : " "}${esc(st.name)}${usable}`;
         }).join("\n")
       : "  (no items)";
     const spells = knownSpells(ch);

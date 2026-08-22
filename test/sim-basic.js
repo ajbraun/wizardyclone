@@ -49,14 +49,14 @@ press("l"); press("l");
 
 // regression: trade gear between party members via Inspect > Trade
 press("g"); press("i"); press("1"); // tavern -> inspect HERO
-press("t"); press("1"); press("2"); // give item 1 (long sword) to member 2
+press("t"); press("a"); press("b"); // give item a (long sword) to roster member b
 assert(get("Game.party[1].items.some(i => i.id === 'LONGSWORD' && !i.eq)"), "long sword traded to CLERIC, unequipped");
 assert(get("Game.party[0].items.every(i => i.id !== 'LONGSWORD')"), "HERO no longer has the long sword");
 assert(get("Game.counters['e:trade']") === 1, "trade event counted");
-press("t"); press("1"); press("1"); // self-trade is a polite no-op
+press("t"); press("a"); press("a"); // self-trade is a polite no-op
 assert(get("Game.party[0].items.length") === 1, "self-trade changes nothing");
-// regression: item detail card — press an item's number in inspect view
-press("1");
+// regression: item detail card — I) Item details, then the item's letter
+press("i"); press("a");
 {
   const panel = H.els["panel"].innerHTML;
   assert(panel.includes("VALUE"), "item card shows value");
@@ -64,6 +64,26 @@ press("1");
 }
 press("l");
 press("l"); press("l");
+
+// regression: 10+ item inventory — 12th item sellable via its letter 'm'
+run('for (let i = 0; i < 11; i++) Game.party[0].items.push({ id: "DAGGER", eq: false });');
+press("b"); press("s"); // Boltac -> sell as HERO
+run("var __inv0 = Game.party[0].items.length;");
+press("m");
+assert(get("Game.party[0].items.length") === get("__inv0") - 1, "12th item sold via letter 'm'");
+press("l"); press("l");
+
+// regression: trading works in town, including roster members outside the party
+run(`
+  const mule = newChar("MULE", "Human", "Neutral", {STR:11,IQ:8,PIE:5,VIT:10,AGI:8,LUK:9}, "Fighter");
+  mule.items.push({ id: "DAGGER", eq: false });
+  Game.roster.push(mule);
+`);
+press("e"); press("t"); press("i"); press("c"); // training grounds -> inspect MULE
+press("t"); press("a"); press("a"); // give MULE's dagger to HERO (roster slot a)
+assert(get("Game.roster[2].items.length") === 0, "MULE handed the dagger over");
+assert(get('Game.party[0].items.some(i => i.id === "DAGGER")'), "HERO received it in town");
+press("l"); press("l"); press("c"); // back to castle
 
 // wander until wipe or step budget
 press("e"); press("m");

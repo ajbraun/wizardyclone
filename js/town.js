@@ -193,21 +193,24 @@ const TavernScreen = {
 function inspectScreen(ch, backFn) {
   return {
     mode: "view", tradeIdx: -1,
+    // in the dungeon you trade within the party; in town, everyone's around
+    tradePool() { return Game.maze ? Game.party : Game.roster; },
     draw() {
       let extra = "";
       if (this.mode === "detail") {
         UI.panel(itemCard(ch.items[this.detailIdx], ch) + `\n\n${UI.key("L", "Back")}`);
         return;
       }
-      if (this.mode === "equip") extra = `\n<span class="k">Press an item number to equip/unequip.</span> ${UI.key("L", "Done")}`;
-      else if (this.mode === "drop") extra = `\n<span class="k">Press an item number to DROP it.</span> ${UI.key("L", "Done")}`;
-      else if (this.mode === "use") extra = `\n<span class="k">Press a potion's number to drink it.</span> ${UI.key("L", "Done")}`;
-      else if (this.mode === "trade") extra = `\n<span class="k">Press an item number to give away.</span> ${UI.key("L", "Done")}`;
+      if (this.mode === "equip") extra = `\n<span class="k">Press an item's letter to equip/unequip.</span> ${UI.key("L", "Done")}`;
+      else if (this.mode === "drop") extra = `\n<span class="k">Press an item's letter to DROP it.</span> ${UI.key("L", "Done")}`;
+      else if (this.mode === "use") extra = `\n<span class="k">Press a potion's letter to drink it.</span> ${UI.key("L", "Done")}`;
+      else if (this.mode === "trade") extra = `\n<span class="k">Press an item's letter to give away.</span> ${UI.key("L", "Done")}`;
+      else if (this.mode === "detailPick") extra = `\n<span class="k">Press an item's letter for its full stats.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "tradeTo") {
-        const names = Game.party.map((p, i) => `${i + 1}=${esc(p.name)}`).join("  ");
+        const names = this.tradePool().map((p, i) => `${LETTERS[i]}=${esc(p.name)}`).join("  ");
         extra = `\n<span class="k">Give the ${esc(IT(ch.items[this.tradeIdx]).name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
       }
-      else extra = `\n<span class="dim">Press an item's number for its full stats.</span>\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("L", "Leave")}`;
+      else extra = `\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("I", "Item details")}  ${UI.key("L", "Leave")}`;
       UI.panel(UI.charSheet(ch) + "\n" + extra);
     },
     key(k) {
@@ -216,18 +219,16 @@ function inspectScreen(ch, backFn) {
         else if (k === "t") { this.mode = "trade"; this.draw(); }
         else if (k === "d") { this.mode = "drop"; this.draw(); }
         else if (k === "u") { this.mode = "use"; this.draw(); }
+        else if (k === "i") { this.mode = "detailPick"; this.draw(); }
         else if (k === "l") backFn();
-        else {
-          const n = parseInt(k, 10) - 1;
-          if (n >= 0 && n < ch.items.length) { this.detailIdx = n; this.mode = "detail"; this.draw(); }
-        }
         return;
       }
       if (k === "l") { this.mode = "view"; this.draw(); return; }
-      const i = parseInt(k, 10) - 1;
+      const i = LETTERS.indexOf(k);
       if (this.mode === "tradeTo") {
-        if (i >= 0 && i < Game.party.length) {
-          const target = Game.party[i];
+        const pool = this.tradePool();
+        if (i >= 0 && i < pool.length) {
+          const target = pool[i];
           if (target === ch) { UI.log(`${ch.name} hands it to... ${ch.name}. Done?`); }
           else {
             const entry = ch.items.splice(this.tradeIdx, 1)[0];
@@ -245,8 +246,9 @@ function inspectScreen(ch, backFn) {
       if (!(i >= 0 && i < ch.items.length)) return;
       const entry = ch.items[i];
       const def = IT(entry);
+      if (this.mode === "detailPick") { this.detailIdx = i; this.mode = "detail"; this.draw(); return; }
       if (this.mode === "trade") {
-        if (Game.party.length < 2 || !Game.party.includes(ch)) { UI.log("No one around to trade with."); return; }
+        if (this.tradePool().length < 2) { UI.log("No one around to trade with."); return; }
         this.tradeIdx = i;
         this.mode = "tradeTo";
         this.draw();
@@ -446,7 +448,7 @@ const ShopScreen = {
     } else if (this.mode === "sell") {
       const rows = ch.items.map((it, i) => {
         const st = IT(it);
-        return UI.key(i + 1, `${it.eq ? "*" : " "}${pad(esc(st.name), 26)} ${padl(Math.floor(st.price / 2), 5)} G`);
+        return UI.key(LETTERS[i] || "?", `${it.eq ? "*" : " "}${pad(esc(st.name), 26)} ${padl(Math.floor(st.price / 2), 5)} G`);
       }).join("\n") || '<span class="dim">(nothing to sell)</span>';
       UI.panel(`${head}\n${rows}\n\n${UI.key("L", "Back")}`);
     }
@@ -485,7 +487,7 @@ const ShopScreen = {
         UI.renderParty(); this.draw();
       }
     } else if (this.mode === "sell") {
-      const i = parseInt(k, 10) - 1;
+      const i = LETTERS.indexOf(k);
       if (i >= 0 && i < ch.items.length) {
         const id = ch.items[i].id;
         const st = IT(ch.items[i]);
