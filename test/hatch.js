@@ -8,6 +8,7 @@ const { press, get, run } = H;
 press("n");
 run(`
   const ch = newChar("SCOUT", "Human", "Good", {STR:12,IQ:8,PIE:5,VIT:12,AGI:10,LUK:9}, "Fighter");
+  ch.gold = 10000; // tolls are a fact of life now
   Game.roster.push(ch); Game.party.push(ch);
   Game.flags.seed = 4242;
 `);

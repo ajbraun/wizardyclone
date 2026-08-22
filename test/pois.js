@@ -12,6 +12,8 @@ run(`
   Game.roster.push(ch); Game.party.push(ch);
   Game.flags.seed = 90210;
   Game.flags.boss = true;
+  // pre-award gold-milestone achievements so their rewards don't skew gold math
+  for (const a of ACHIEVEMENTS) if (a.counter === "goldSpent" || a.counter === "goldEarned") Game.achievements[a.id] = 1;
 `);
 
 // --- generation: every POI type appears, deterministically, crawl-only

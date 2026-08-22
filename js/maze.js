@@ -52,7 +52,7 @@ const MazeScreen = {
         : `\n<span class="k">Stairs DOWN. Press ENTER to descend.</span>`;
     } else if (spc && spc.t === "sanctum") {
       const st = streakCount();
-      prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle${st ? ` (forfeits +${Math.min(10, st) * 10}% streak)` : ""}</span>`;
+      prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle (${elevatorToll(m.level)} gold toll${st ? `, forfeits +${Math.min(10, st) * 10}% streak` : ""})</span>`;
     } else if (spc && spc.t === "shrine" && !Game.flags[poiFlag(m)]) {
       prompt = `\n<span class="gold">A SHRINE hums with conditional love.</span>\n<span class="k">ENTER) Pray</span>`;
     } else if (spc && spc.t === "kiosk") {
@@ -78,6 +78,12 @@ const MazeScreen = {
     else if (k === "t") {
       const spc = map.specials[m.x + "," + m.y];
       if (spc && spc.t === "sanctum") {
+        // the ride home always runs — the System takes what it can
+        const toll = elevatorToll(m.level);
+        const paid = Math.min(partyGold(), toll);
+        spendPartyGold(paid, "toll");
+        if (paid < toll) UI.log(`[SYSTEM] Toll is ${toll}. The System accepts your entire net worth (${paid}) as partial payment.`);
+        else UI.log(`[SYSTEM] Toll of ${toll} gold collected.`);
         UI.log("The System elevator rattles you back to the surface. No music plays.");
         Events.emit("elevator", { from: m.level });
         Game.maze = null;

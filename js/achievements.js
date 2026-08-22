@@ -132,6 +132,8 @@ ach("BUYS_10", "Retail Therapy", "e:buy", 10, "Buy 10 items",
   "Ten purchases. The dungeon is stressful. The System understands.", { gold: 50 });
 ach("SELLS_10", "One Man's Trash", "e:sell", 10, "Sell 10 items",
   "Ten items fenced. Boltac asks no questions. Boltac knows the answers.", { gold: 50 });
+ach("STORE_10", "Surprise Mechanics Enjoyer", "e:storeBuy", 10, "Buy 10 loot boxes from the System Store",
+  "Ten boxes purchased voluntarily. Your profile has been upgraded from 'customer' to 'revenue stream.'", { box: "GOLD" });
 ach("POTIONS_10", "Bottoms Up", "e:potion", 10, "Drink 10 potions",
   "Ten potions. At some point this is just a beverage preference.", { gold: 50 });
 
@@ -251,8 +253,46 @@ const SystemScreen = {
     const pLine = pending.length
       ? `\n\n<span class="dim">...and ${pending.length} undiscovered. The System declines to spoil them.</span>`
       : `\n\n<span class="gold">All of them. The System is genuinely unsettled.</span>`;
-    UI.panel(`<h2>THE SYSTEM</h2><span class="dim">It sees all. It judges most.</span>\n\n${stats}${titles}\n\nACHIEVEMENTS (${earned.length}/${ACHIEVEMENTS.length}):\n${eRows}${pLine}\n\n${UI.key("L", "Leave")}`);
+    UI.panel(`<h2>THE SYSTEM</h2><span class="dim">It sees all. It judges most.</span>\n\n${stats}${titles}\n\nACHIEVEMENTS (${earned.length}/${ACHIEVEMENTS.length}):\n${eRows}${pLine}\n\n${UI.key("B", "System Store")}  ${UI.key("L", "Leave")}`);
   },
-  key(k) { if (k === "l") Game.go(this.back || CastleScreen); },
+  key(k) {
+    if (k === "l") Game.go(this.back || CastleScreen);
+    else if (k === "b") Game.go(StoreScreen);
+  },
 };
 function openSystem(from) { SystemScreen.back = from; Game.go(SystemScreen); }
+
+// ---------------------------------------------------------------- the store
+// The System sells loot boxes. Prices scale with your deepest floor, and so
+// do the contents — the store stays relevant and the gold stays spent.
+const STORE_TIERS = [
+  { tier: "BRONZE", base: 150 },
+  { tier: "SILVER", base: 500 },
+  { tier: "GOLD", base: 2000 },
+  { tier: "PLATINUM", base: 8000 },
+];
+const StoreScreen = {
+  price(t) { return t.base * (Game.counters.maxDepth || 1); },
+  draw() {
+    Render.blank("SYSTEM STORE");
+    UI.viewLabel("");
+    const rows = STORE_TIERS.map((t, i) => {
+      const p = this.price(t);
+      const label = `${pad(t.tier + " LOOT BOX", 19)} ${p} gold`;
+      return partyGold() >= p ? UI.key(String(i + 1), label) : `<span class="dim">${i + 1}) ${label}</span>`;
+    }).join("\n");
+    UI.panel(`<h2>SYSTEM STORE</h2><span class="dim">"Gambling is illegal. This is a surprise mechanic." — The System</span>\n\n${rows}\n<span class="dim">   ${pad("CELESTIAL LOOT BOX", 19)} NOT FOR SALE. Earn it.</span>\n\n<span class="dim">Party gold: ${partyGold()}   Prices track your deepest floor (${Game.counters.maxDepth || 1}).</span>\n\n${UI.key("L", "Leave")}`);
+  },
+  key(k) {
+    if (k === "l") { Game.go(SystemScreen); return; }
+    const t = STORE_TIERS[parseInt(k, 10) - 1];
+    if (!t) return;
+    const p = this.price(t);
+    if (partyGold() < p) { UI.log("[SYSTEM] Insufficient funds. Consider descending. Or dying less expensively."); return; }
+    spendPartyGold(p, "store");
+    Events.emit("storeBuy", { tier: t.tier, price: p });
+    openLootBox(t.tier, Game.counters.maxDepth || 1);
+    Game.save();
+    this.draw();
+  },
+};

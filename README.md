@@ -35,6 +35,10 @@ no dependencies. Saves live in your browser's localStorage.
 - **The depth streak** — +10% spoils per new floor this expedition, up to
   double. Riding the elevator home forfeits it. The System mentions this
   every time, helpfully.
+- **The System Store** — spend your winnings on loot boxes priced by your
+  deepest floor. "Gambling is illegal. This is a surprise mechanic."
+  Elevator rides now bill a modest toll; the stairs remain free, and
+  character-building.
 - **Automap** — press `M`. Fog-of-war: it only knows where you've walked.
 
 ## Controls

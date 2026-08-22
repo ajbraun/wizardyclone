@@ -170,7 +170,8 @@ assert(get("Game.party.some(c => c.status !== 'DEAD' && c.hp === 5)"), "sanctum 
 press("t");
 assert(get("Game.maze") === null, "elevator returns to castle");
 assert(get("Game.state === CastleScreen"), "at the castle");
-// edge of town offers elevator re-entry
+// edge of town offers elevator re-entry (fund the toll first)
+run("Game.party.forEach(c => c.gold += 1000);");
 press("e"); press("m");
 assert(get("EdgeScreen.mode") === "enter", "entry choice offered");
 assert(H.els["panel"].innerHTML.includes("The Hatch (Floor 4)"), "hatch entrance offered post-boss");

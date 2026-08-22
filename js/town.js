@@ -1,6 +1,17 @@
 "use strict";
 // ---------------------------------------------------------------- helpers
 function partyGold() { return Game.party.reduce((a, c) => a + c.gold, 0); }
+// the System's elevator is a paid service; walking remains complimentary
+function elevatorToll(floor) { return 25 * floor; }
+function payToll(floor) {
+  const toll = elevatorToll(floor);
+  if (partyGold() < toll) {
+    UI.log(`[SYSTEM] The toll is ${toll} gold. The stairs remain free, and character-building.`);
+    return false;
+  }
+  spendPartyGold(toll, "toll");
+  return true;
+}
 function spendPartyGold(amt, src) {
   for (const ch of Game.party) {
     const take = Math.min(ch.gold, amt);
@@ -49,17 +60,19 @@ const EdgeScreen = {
       go: () => { const st = LEVELS[1].start; this.enterMaze({ level: 1, x: st.x, y: st.y, f: st.f, light: 0 }); },
     }];
     if (Game.flags.boss) list.push({
-      label: "The Hatch (Floor 4)",
+      label: `The Hatch (Floor 4) — ${elevatorToll(4)} gold toll`,
       go: () => {
+        if (!payToll(4)) return;
         const u = findSpecial(getLevel(4), "up");
-        UI.log("[SYSTEM] Express service to the Hatch. The invoice is in the mail.");
+        UI.log("[SYSTEM] Express service to the Hatch. The invoice was the ride.");
         this.enterMaze({ level: 4, x: u.x, y: u.y, f: 2, light: 0 });
       },
     });
     const s = this.deepestSanctum();
     if (s) list.push({
-      label: `System elevator to the Floor ${s.level} sanctum`,
+      label: `System elevator to the Floor ${s.level} sanctum — ${elevatorToll(s.level)} gold toll`,
       go: () => {
+        if (!payToll(s.level)) return;
         getLevel(s.level); // ensure the floor (and its monsters) exist
         UI.log(`[SYSTEM] Elevator descending to floor ${s.level}. Mind the everything.`);
         this.enterMaze({ level: s.level, x: s.x, y: s.y, f: 0, light: 0 });
