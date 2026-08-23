@@ -68,6 +68,20 @@ const EdgeScreen = {
         this.enterMaze({ level: 4, x: u.x, y: u.y, f: 2, light: 0 });
       },
     });
+    for (const wf of Object.keys(WARDENS).map(Number).sort((a, b) => a - b)) {
+      if (!Game.flags["warden" + wf]) continue;
+      const dest = wf + 1;
+      const b = bandOf(dest);
+      list.push({
+        label: `${b.name} (Floor ${dest}) — ${elevatorToll(dest)} gold toll`,
+        go: () => {
+          if (!payToll(dest)) return;
+          const u = findSpecial(getLevel(dest), "up");
+          UI.log(`[SYSTEM] Express to ${b.name}. Try to make it worth the fuel.`);
+          this.enterMaze({ level: dest, x: u.x, y: u.y, f: 2, light: 0 });
+        },
+      });
+    }
     const s = this.deepestSanctum();
     if (s) list.push({
       label: `System elevator to the Floor ${s.level} sanctum — ${elevatorToll(s.level)} gold toll`,
@@ -93,6 +107,7 @@ const EdgeScreen = {
     UI.log("Your party descends into the maze...");
     Game.maze = start;
     const map = getLevel(start.level);
+    if (start.level > 3) UI.log(bandOf(start.level).intro);
     if (map.mod) UI.log(map.mod.announce);
     streakVisit(start.level);
     Game.go(MazeScreen);

@@ -29,6 +29,11 @@ no dependencies. Saves live in your browser's localStorage.
   introduction, an affix, and a guaranteed chest.
 - **Floor modifiers** — half the Crawl runs under a house rule the System
   announces on arrival: BLOOD SURCHARGE, BLACKOUT, RUSH HOUR, AUDIT SEASON...
+- **Biome bands & Wardens** — every five floors is a place with its own name,
+  phosphor tint, and monster leanings: the Warrens, the Drowned Court, the
+  Bone Orchard, the Furnace Levels, the Silent Archive, the Root. A hand-built
+  Warden seals the bottom of each band; break the seal to open the next band
+  and extend the elevator. Past floor 33 lies the After. Good luck.
 - **Things worth finding** — shrines with conditional love, System kiosks
   with convenience pricing, vaults with named guardians on retainer, and the
   remains of crawlers who almost made it.

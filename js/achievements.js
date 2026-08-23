@@ -100,6 +100,10 @@ ach("REMAINS_10", "Estate Executor", "e:remains", 10, "Search the remains of 10 
   "You inherit whatever they couldn't carry out. It's tradition now.", { gold: 200 });
 ach("VAULTS_5", "Repossession Agent", "e:vault", 5, "Crack 5 System vaults",
   "Five vaults emptied. The guardians were the security deposit.", { box: "SILVER" });
+ach("WARDEN_1", "Regicide, Basically", "e:warden", 1, "Defeat a band Warden",
+  "It held the seal for centuries. You held a grudge for one afternoon.", { gold: 500 });
+ach("WARDENS_6", "Keyholder", "e:warden", 6, "Defeat all six Wardens",
+  "Every seal broken. The System would like its keys back. The System can ask nicely.", { box: "PLATINUM", title: "Keyholder" });
 
 // -------------------------------------------------------------- death & misfortune
 ach("DEATH_1", "Everybody Dies Once", "deaths", 1, "Lose a party member",

@@ -107,7 +107,8 @@ run(`
   // silence achievement/loot-box spam so the announcement stays in the log window
   for (const a of ACHIEVEMENTS) Game.achievements[a.id] = 1;
   var __target = 0;
-  for (let n = 6; n <= 200; n++) if (getLevel(n).mod) { __target = n; break; }
+  // skip floors whose ancestor is a sealed Warden floor — descent would start a fight
+  for (let n = 6; n <= 200; n++) if (getLevel(n).mod && !WARDENS[n - 1]) { __target = n; break; }
   const prev = getLevel(__target - 1);
   const dn = findSpecial(prev, "down");
   Game.maze = { level: __target - 1, x: dn.x, y: dn.y, f: 0, light: 0 };

@@ -42,7 +42,7 @@ const Render = (() => {
     if (!ctx) init();
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, 560, 392);
-    ctx.strokeStyle = "#d8ffd8";
+    ctx.strokeStyle = map.tint || "#d8ffd8";
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
     const f = DIRS[dir], r = DIRS[(dir + 1) % 4];

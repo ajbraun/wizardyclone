@@ -47,9 +47,12 @@ const MazeScreen = {
         ? `\n<span class="k">Stairs UP to the castle. Press ENTER to leave the maze.</span>`
         : `\n<span class="k">Stairs UP. Press ENTER to climb.</span>`;
     } else if (spc && spc.t === "down") {
+      const wd = WARDENS[m.level];
       prompt = (m.level === 3 && !Game.flags.boss)
         ? `\n<span class="dim">A sealed hatch. Something powerful holds it shut.</span>`
-        : `\n<span class="k">Stairs DOWN. Press ENTER to descend.</span>`;
+        : (wd && !Game.flags["warden" + m.level])
+          ? `\n<span class="bad">The way down is sealed. ${esc(wd.name.toUpperCase())} holds the seal.</span>\n<span class="k">ENTER) Challenge the Warden</span>`
+          : `\n<span class="k">Stairs DOWN. Press ENTER to descend.</span>`;
     } else if (spc && spc.t === "sanctum") {
       const st = streakCount();
       prompt = `\n<span class="gold">A SYSTEM SANCTUM hums here.</span>\n<span class="k">ENTER) Rest (once per expedition)   T) Elevator to castle (${elevatorToll(m.level)} gold toll${st ? `, forfeits +${Math.min(10, st) * 10}% streak` : ""})</span>`;
@@ -116,11 +119,17 @@ const MazeScreen = {
           UI.log("The hatch is sealed by a will stronger than yours. For now.");
           return;
         }
+        if (WARDENS[m.level] && !Game.flags["warden" + m.level]) {
+          UI.log(`${WARDENS[m.level].name.toUpperCase()} rises to hold the seal!`);
+          Combat.start({ warden: m.level });
+          return;
+        }
         const nxt = getLevel(m.level + 1);
         const u = findSpecial(nxt, "up");
         Game.maze = { level: m.level + 1, x: u.x, y: u.y, f: 2, light: m.light, sanc: m.sanc, streakFloors: m.streakFloors };
         UI.log(`You descend to level ${m.level + 1}...`);
         if (m.level + 1 > 3) UI.log("[SYSTEM] Welcome to the Crawl. The floors below are... enthusiastic.");
+        if (m.level + 1 > 3 && (m.level <= 3 || bandOf(m.level + 1) !== bandOf(m.level))) UI.log(bandOf(m.level + 1).intro);
         if (nxt.mod) UI.log(nxt.mod.announce);
         streakVisit(m.level + 1);
         Events.emit("descend", { to: m.level + 1 });
@@ -295,7 +304,7 @@ const MapScreen = {
     }
     Render.drawMap(map, Game.seen[m.level] || {}, m.x, m.y, m.f);
     UI.viewLabel(`MAP  LEVEL ${m.level}`);
-    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; up   &gt; down   S sanctum   + shrine   $ kiosk   V vault   † remains</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
+    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}${map.band ? ` — ${esc(map.band.toUpperCase())}` : ""}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; up   &gt; down   S sanctum   + shrine   $ kiosk   V vault   † remains</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
   },
   key(k, e) {
     if (k === "m" || k === "l" || e.key === "Escape") Game.go(MazeScreen);

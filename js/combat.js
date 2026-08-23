@@ -54,6 +54,11 @@ const Combat = {
     if (this.opts.boss) {
       this.addGroup("APPRENTICE", 1);
       this.addGroup("MAGE5", d(2));
+    } else if (this.opts.warden) {
+      const wd = MONSTERS["WARDEN" + this.opts.warden];
+      const whp = dice(wd.hp);
+      this.groups.push({ def: wd, silenced: false, acMod: 0, elite: true, members: [{ hp: whp, maxhp: whp, asleep: false, para: false }] });
+      this.addGroup(pickWeighted(map.table)); // the retinue
     } else if (this.opts.vault) {
       this.addGroup(pickWeighted(map.table));
       this.addElite(map);
@@ -74,7 +79,7 @@ const Combat = {
     }
     Events.emit("encounter", { groups: this.groups.map(g => g.def), boss: !!this.opts.boss, lair: !!this.opts.lair, level: Game.maze.level });
     this.surprised = false; this.surprising = false;
-    if (!this.opts.boss && !this.opts.vault) {
+    if (!this.opts.boss && !this.opts.vault && !this.opts.warden) {
       const r = rnd(100);
       if (r < 15) { this.surprising = true; UI.log("You surprise them!"); }
       else if (r < 25) { this.surprised = true; UI.log("You are surprised!"); }
@@ -619,6 +624,14 @@ const Combat = {
     Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level, encLvl });
     this.msgs = [`VICTORY!`, `Spoils: ${share} XP each${anyScaled ? " (reduced — these were beneath you)" : ""} and ${gshare} gold.`];
     for (const g of this.groups) if (g.elite) this.msgs.push(`[SYSTEM] ${g.def.name} has been removed from the payroll.`);
+    if (this.opts.warden && !Game.flags["warden" + this.opts.warden]) {
+      Game.flags["warden" + this.opts.warden] = true;
+      Events.emit("warden", { level: this.opts.warden });
+      const nb = bandOf(this.opts.warden + 1);
+      this.msgs.push("", "The Warden falls. The seal below shatters.",
+        `[SYSTEM] ${nb.name.toUpperCase()} is now open. Elevator service extended. Condolences also extended.`);
+      openLootBox("GOLD", this.opts.warden);
+    }
     if (this.opts.vaultKey && !Game.flags[this.opts.vaultKey]) {
       Game.flags[this.opts.vaultKey] = true;
       Events.emit("vault", { level: Game.maze.level });

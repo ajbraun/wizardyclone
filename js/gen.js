@@ -83,6 +83,73 @@ function floorMod() {
   const map = Game.maze ? getLevel(Game.maze.level) : null;
   return (map && map.mod) || {};
 }
+// ================================================================ BIOME BANDS
+// Every 5 floors is a place: a name, a monster leaning, a phosphor tint for
+// the wireframe, and its own graffiti. The System narrates the transitions.
+const BANDS = [
+  { name: "The Warrens", tint: "#d8ffd8", weights: { pack: 4, stinger: 3, brute: 2 },
+    intro: "[SYSTEM] Now entering THE WARRENS (floors 4-8). Everything here is small, numerous, and personally motivated.",
+    msgs: ["Something chitters in the walls. The walls chitter back.",
+      "A thousand small tunnels branch off here, all rodent-sized. Some recently widened."] },
+  { name: "The Drowned Court", tint: "#c2f0ff", weights: { priest: 4, caster: 2, undead: 2 },
+    intro: "[SYSTEM] Now entering THE DROWNED COURT (floors 9-13). Dress code: waterlogged. The nobility never left.",
+    msgs: ["The stone weeps steadily. The ceiling has opinions about being a floor.",
+      "A waterline stain runs the length of the wall, well above your head."] },
+  { name: "The Bone Orchard", tint: "#f0eedd", weights: { undead: 5, priest: 2 },
+    intro: "[SYSTEM] Now entering THE BONE ORCHARD (floors 14-18). Everything here was buried properly. It didn't take.",
+    msgs: ["The floor crunches underfoot. You decide not to inventory why.",
+      "Someone stacked femurs here with real curatorial intent."] },
+  { name: "The Furnace Levels", tint: "#ffd9a0", weights: { breather: 4, brute: 2 },
+    intro: "[SYSTEM] Now entering THE FURNACE LEVELS (floors 19-23). Workplace safety does not operate at this depth.",
+    msgs: ["The air shimmers. Your armor has become a cooking implement.",
+      "Slag runs in the gutters, like the building is sweating metal."] },
+  { name: "The Silent Archive", tint: "#d8d0e8", weights: { caster: 4, undead: 2, priest: 2 },
+    intro: "[SYSTEM] Now entering THE SILENT ARCHIVE (floors 24-28). Some records are sealed because they are load-bearing.",
+    msgs: ["Shelves of ledgers, every page blank. Or redacted. Hard to say which is worse.",
+      "A sign reads QUIET PLEASE. Something underlined it. Recently. In claw."] },
+  { name: "The Root", tint: "#ffc2c2", weights: { brute: 2, breather: 2, undead: 2, caster: 2, priest: 2 },
+    intro: "[SYSTEM] Now entering THE ROOT (floors 29-33). The dungeon stops pretending here.",
+    msgs: ["The walls are warm, and slightly too regular. Like scales.",
+      "Everything down here hums at a frequency your teeth dislike."] },
+  { name: "The After", tint: "#b8ccb8", weights: {},
+    intro: "[SYSTEM] There is no floor 34. Nevertheless, here you are.",
+    msgs: ["There is no map for this. There was never supposed to be a here.",
+      "The System's signage has given up. A hand-painted arrow points down."] },
+];
+function bandOf(n) { return BANDS[Math.max(0, Math.min(BANDS.length - 1, Math.floor((n - 4) / 5)))]; }
+
+// ---------------------------------------------------------------- wardens
+// A hand-built boss seals the last floor of each band. Killing it opens the
+// band below and extends the elevator. The System sells this as a promotion.
+const WARDENS = {
+  8: { name: "Mother of Thousands", art: "bug", lvl: 9, hp: "12d8+20", ac: 2, dmg: ["2d6", "2d6", "1d6"], xp: 4000,
+    poison: true, affix: { key: "FRENZIED", trait: "attacks in brooding fury" }, base: "brood-mother",
+    lore: "Every rat and wasp you've killed had a mother. Statistically, this is her." },
+  13: { name: "The Magistrate Below", art: "caster", lvl: 14, hp: "16d8+40", ac: 0, dmg: ["2d8", "2d8"], xp: 9000,
+    priest: 2, affix: { key: "REGENERATING", trait: "regenerates every round" }, base: "drowned judge",
+    lore: "It presides over a court of the drowned. Attendance is mandatory and posthumous." },
+  18: { name: "The Grand Ossuary", art: "undead", lvl: 19, hp: "20d8+60", ac: -3, dmg: ["3d6", "3d6"], xp: 16000,
+    undead: true, affix: { key: "ARMORED", trait: "absurdly armored" }, base: "walking reliquary",
+    lore: "A cathedral that gave up on holding still. It collects donations by force." },
+  23: { name: "Slagmaw", art: "drake", lvl: 24, hp: "24d10+80", ac: -2, dmg: ["3d8", "3d8"], xp: 26000,
+    breath: "fire", affix: { key: "GILDED", trait: "worth triple gold" }, base: "furnace drake",
+    lore: "It eats gold and is, at this point, mostly gold. The System calls this an incentive structure." },
+  28: { name: "The Redacted", art: "caster", lvl: 29, hp: "28d10+120", ac: -4, dmg: ["3d8", "3d8"], xp: 40000,
+    mage: 3, affix: { key: "ARMORED", trait: "half-erased (absurdly hard to hit)" }, base: "expunged librarian",
+    lore: "[EXPUNGED] at its own request. The request was granted mid-sentence." },
+  33: { name: "The Custodian", art: "brute", lvl: 34, hp: "33d10+160", ac: -6, dmg: ["4d8", "4d8", "2d8"], xp: 60000,
+    affix: { key: "REGENERATING", trait: "regenerates every round" }, base: "maintenance engine",
+    lore: "It maintains the bottom of the world. You are filed under 'debris.'" },
+};
+for (const [floor, wd] of Object.entries(WARDENS)) {
+  wd.id = "WARDEN" + floor;
+  wd.pl = wd.name;
+  wd.num = "1";
+  wd.elite = true;
+  wd.sleepResist = 100;
+  MONSTERS[wd.id] = wd;
+}
+
 // found on the remains of less fortunate crawlers
 const REMAINS_NOTES = [
   "A final journal entry: 'The vault was a mimic. The mimic was also—'",
@@ -101,7 +168,12 @@ const GEN_MSGS = [
 ];
 
 function genMonster(depth, rng, idx) {
-  const arch = GEN_ARCH[Math.floor(rng() * GEN_ARCH.length)];
+  // archetype pick weighted by the floor's band (default weight 1)
+  const band = bandOf(depth);
+  const ws = GEN_ARCH.map(a => (band.weights && band.weights[a.key]) || 1);
+  let r = rng() * ws.reduce((a, v) => a + v, 0);
+  let arch = GEN_ARCH[0];
+  for (let i = 0; i < GEN_ARCH.length; i++) { r -= ws[i]; if (r < 0) { arch = GEN_ARCH[i]; break; } }
   const lvl = Math.max(1, depth - 1 + Math.floor(rng() * 3));
   const name = `${GEN_ADJ[Math.floor(rng() * GEN_ADJ.length)]} ${arch.nouns[Math.floor(rng() * arch.nouns.length)]}`;
   const dmgDice = Math.max(1, Math.round(lvl * arch.dmg / 3.5));
@@ -188,9 +260,13 @@ function genLevel(n) {
     const x = ri(20), y = ri(20);
     if (!m.specials[x + "," + y]) sp(m, x, y, { t: "lair" });
   }
+  const band = bandOf(n);
+  m.band = band.name;
+  m.tint = band.tint;
+  const msgPool = GEN_MSGS.concat(band.msgs || []);
   for (let i = 0; i < 2; i++) {
     const x = ri(20), y = ri(20);
-    if (!m.specials[x + "," + y]) sp(m, x, y, { t: "msg", msg: GEN_MSGS[ri(GEN_MSGS.length)] });
+    if (!m.specials[x + "," + y]) sp(m, x, y, { t: "msg", msg: msgPool[ri(msgPool.length)] });
   }
   // points of interest: things worth finding that aren't the stairs
   const pois = [];
