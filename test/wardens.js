@@ -31,6 +31,23 @@ run(`
 `);
 for (const e of get("__bandErr")) assert(false, e);
 
+// --- carve profiles: generated floors approach the hand-built feel
+run(`
+  function __openness(m) {
+    let open = 0, total = 0;
+    for (let y = 1; y < 20; y++) for (let x = 0; x < 20; x++) { total++; if (m.hw[y][x] !== 1) open++; }
+    for (let y = 0; y < 20; y++) for (let x = 1; x < 20; x++) { total++; if (m.vw[y][x] !== 1) open++; }
+    return open / total;
+  }
+  var __openErr = [];
+  for (const n of [4, 10, 15, 20, 25, 30]) {
+    const o = __openness(getLevel(n));
+    if (o < 0.63) __openErr.push("floor " + n + " too mazey (" + o.toFixed(3) + ")");
+  }
+  if (!(__openness(getLevel(30)) > __openness(getLevel(25)))) __openErr.push("Root should be more open than the Archive");
+`);
+for (const e of get("__openErr")) assert(false, e);
+
 // --- band weighting: the Bone Orchard leans undead (deterministic per seed)
 run(`
   var __undead = getLevel(15).table.filter(([id]) => MONSTERS[id].undead).length;
@@ -77,6 +94,8 @@ assert(get("document.getElementById('log').innerHTML").includes("GOLD LOOT BOX")
 
 // --- descent now works, and the band transition is announced
 run(`
+  // silence achievement/loot-box spam so the intro stays in the log window
+  for (const a of ACHIEVEMENTS) Game.achievements[a.id] = 1;
   var __dn8 = findSpecial(getLevel(8), "down");
   Game.maze = { level: 8, x: __dn8.x, y: __dn8.y, f: 0, light: 0 };
   UI.clearLog();

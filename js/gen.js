@@ -88,30 +88,37 @@ function floorMod() {
 // the wireframe, and its own graffiti. The System narrates the transitions.
 const BANDS = [
   { name: "The Warrens", tint: "#d8ffd8", weights: { pack: 4, stinger: 3, brute: 2 },
+    layout: { loops: 100, rooms: 8, rmin: 2, rmax: 4 },  // tunnels and small chambers
     intro: "[SYSTEM] Now entering THE WARRENS (floors 4-8). Everything here is small, numerous, and personally motivated.",
     msgs: ["Something chitters in the walls. The walls chitter back.",
       "A thousand small tunnels branch off here, all rodent-sized. Some recently widened."] },
   { name: "The Drowned Court", tint: "#c2f0ff", weights: { priest: 4, caster: 2, undead: 2 },
+    layout: { loops: 55, rooms: 6, rmin: 4, rmax: 7 },  // flooded halls
     intro: "[SYSTEM] Now entering THE DROWNED COURT (floors 9-13). Dress code: waterlogged. The nobility never left.",
     msgs: ["The stone weeps steadily. The ceiling has opinions about being a floor.",
       "A waterline stain runs the length of the wall, well above your head."] },
   { name: "The Bone Orchard", tint: "#f0eedd", weights: { undead: 5, priest: 2 },
+    layout: { loops: 70, rooms: 6, rmin: 3, rmax: 6 },  // crypt rows
     intro: "[SYSTEM] Now entering THE BONE ORCHARD (floors 14-18). Everything here was buried properly. It didn't take.",
     msgs: ["The floor crunches underfoot. You decide not to inventory why.",
       "Someone stacked femurs here with real curatorial intent."] },
   { name: "The Furnace Levels", tint: "#ffd9a0", weights: { breather: 4, brute: 2 },
+    layout: { loops: 90, rooms: 6, rmin: 4, rmax: 7 }, // open works
     intro: "[SYSTEM] Now entering THE FURNACE LEVELS (floors 19-23). Workplace safety does not operate at this depth.",
     msgs: ["The air shimmers. Your armor has become a cooking implement.",
       "Slag runs in the gutters, like the building is sweating metal."] },
   { name: "The Silent Archive", tint: "#d8d0e8", weights: { caster: 4, undead: 2, priest: 2 },
+    layout: { loops: 45, rooms: 7, rmin: 2, rmax: 5 },  // stacks — deliberately the most labyrinthine
     intro: "[SYSTEM] Now entering THE SILENT ARCHIVE (floors 24-28). Some records are sealed because they are load-bearing.",
     msgs: ["Shelves of ledgers, every page blank. Or redacted. Hard to say which is worse.",
       "A sign reads QUIET PLEASE. Something underlined it. Recently. In claw."] },
   { name: "The Root", tint: "#ffc2c2", weights: { brute: 2, breather: 2, undead: 2, caster: 2, priest: 2 },
+    layout: { loops: 140, rooms: 7, rmin: 4, rmax: 7 }, // caverns
     intro: "[SYSTEM] Now entering THE ROOT (floors 29-33). The dungeon stops pretending here.",
     msgs: ["The walls are warm, and slightly too regular. Like scales.",
       "Everything down here hums at a frequency your teeth dislike."] },
   { name: "The After", tint: "#b8ccb8", weights: {},
+    layout: { loops: 90, rooms: 5, rmin: 3, rmax: 6 },
     intro: "[SYSTEM] There is no floor 34. Nevertheless, here you are.",
     msgs: ["There is no map for this. There was never supposed to be a here.",
       "The System's signage has given up. A hand-painted arrow points down."] },
@@ -225,14 +232,20 @@ function genLevel(n) {
     seen.add(nx + "," + ny);
     stack.push([nx, ny]);
   }
-  // loops: knock out extra internal walls so it isn't a strict tree
-  for (let i = 0; i < 40; i++) {
-    if (rng() < 0.5) { const y = 1 + ri(19), x = ri(20); m.hw[y][x] = 0; }
-    else { const x = 1 + ri(19), y = ri(20); m.vw[y][x] = 0; }
+  // carve profile: the band decides how mazey this place is. Hand-built
+  // floors 1-3 sit around 0.78-0.84 open internal edges; a raw backtracker
+  // maze is 0.52. Bands aim for the hand-built feel with local character.
+  const lay = bandOf(n).layout || { loops: 80, rooms: 6, rmin: 3, rmax: 6 };
+  // loops: remove `lay.loops` actual walls (retry past already-open edges)
+  for (let i = 0; i < lay.loops; i++) {
+    for (let t = 0; t < 8; t++) {
+      if (rng() < 0.5) { const y = 1 + ri(19), x = ri(20); if (m.hw[y][x] === 1) { m.hw[y][x] = 0; break; } }
+      else { const x = 1 + ri(19), y = ri(20); if (m.vw[y][x] === 1) { m.vw[y][x] = 0; break; } }
+    }
   }
-  // rooms: clear interiors of a few rects
-  for (let r = 0; r < 4; r++) {
-    const w = 3 + ri(3), h = 3 + ri(3);
+  // rooms: clear interiors of rects
+  for (let r = 0; r < lay.rooms; r++) {
+    const w = lay.rmin + ri(lay.rmax - lay.rmin + 1), h = lay.rmin + ri(lay.rmax - lay.rmin + 1);
     const x0 = 1 + ri(20 - w - 2), y0 = 1 + ri(20 - h - 2);
     for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
       if (y > y0) m.hw[y][x] = 0;
