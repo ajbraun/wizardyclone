@@ -141,7 +141,7 @@ const MazeScreen = {
         for (const ch of Game.party) {
           if (!isUp(ch) && ch.status !== "PARALYZED") continue;
           if (ch.status === "POISONED" || ch.status === "PARALYZED") ch.status = "OK";
-          ch.hp = ch.maxhp;
+          ch.hp = maxHP(ch);
           restoreSP(ch);
         }
         if (!(Game.flags.sanctums || []).some(s => s.level === m.level)) {
@@ -158,7 +158,7 @@ const MazeScreen = {
         Events.emit("shrine", { level: m.level });
         const r = rnd(100);
         if (r < 40) {
-          for (const ch of Game.party) if (isUp(ch)) { ch.hp = ch.maxhp; if (ch.status === "POISONED") ch.status = "OK"; }
+          for (const ch of Game.party) if (isUp(ch)) { ch.hp = maxHP(ch); if (ch.status === "POISONED") ch.status = "OK"; }
           UI.log("[SYSTEM] The shrine approves of your groveling. Full restoration. No warranty.");
         } else if (r < 65) {
           const g = 40 * map.depth;

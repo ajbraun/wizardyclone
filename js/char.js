@@ -68,8 +68,11 @@ function applyDamage(ch, dmg, src) {
   }
   return false;
 }
+// effective max HP: rolled maxhp plus gear (rings, cloaks) via the mod pipeline
+function maxHP(ch) { return ch.maxhp + Math.floor(mod(ch, "maxhp")); }
+function clampHP(ch) { ch.hp = Math.min(ch.hp, maxHP(ch)); }
 function applyHeal(ch, amt, src) {
-  const eff = Math.max(0, Math.min(ch.maxhp - ch.hp, amt));
+  const eff = Math.max(0, Math.min(maxHP(ch) - ch.hp, amt));
   ch.hp += eff;
   Events.emit("heal", { ch, amt: eff, src: src || {} });
   return eff;

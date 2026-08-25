@@ -249,6 +249,7 @@ function inspectScreen(ch, backFn) {
             const entry = ch.items.splice(this.tradeIdx, 1)[0];
             entry.eq = false;
             target.items.push(entry);
+            clampHP(ch);
             Events.emit("trade", { from: ch, to: target, id: entry.id });
             UI.log(`${ch.name} gives the ${IT(entry).name} to ${target.name}.`);
           }
@@ -284,6 +285,7 @@ function inspectScreen(ch, backFn) {
         if (def.slot !== "potion") { UI.log("That is not a potion."); return; }
         usePotion(ch, ch, i);
       }
+      clampHP(ch); // losing +maxhp gear can't leave hp above the new cap
       UI.renderParty();
       this.draw();
     },
@@ -509,6 +511,7 @@ const ShopScreen = {
         grantGold(ch, Math.floor(st.price / 2), "sell");
         UI.log(`Boltac buys the ${st.name} for ${Math.floor(st.price / 2)} gold.`);
         ch.items.splice(i, 1);
+        clampHP(ch);
         Events.emit("sell", { ch, id });
         UI.renderParty(); this.draw();
       }
@@ -608,7 +611,7 @@ const InnScreen = {
     for (const ch of Game.party) {
       if (!isUp(ch)) continue;
       restoreSP(ch);
-      if (full) ch.hp = ch.maxhp;
+      if (full) ch.hp = maxHP(ch);
       msgs.push(...checkLevelUp(ch));
     }
     UI.log(full ? "The party rests well." : "The party naps in the hay. Spells return.");

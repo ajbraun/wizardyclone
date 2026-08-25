@@ -555,14 +555,14 @@ const Combat = {
         this.say(`The ${def.name} breathes fire!`);
         for (const ch of anyUp) {
           let dmg = Math.max(1, Math.ceil(mm.hp / 2));
-          if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
+          if (pct(30 + ch.stats.AGI + Math.floor(mod(ch, "resist")))) dmg = Math.floor(dmg / 2);
           this.hurt(ch, dmg, `is burned for ${dmg}`, { type: "breath", monster: def });
         }
       } else if (intent.kind === "mahalito") {
         this.say(`A ${def.name} casts MAHALITO!`);
         for (const ch of anyUp) {
           let dmg = dice("4d6");
-          if (pct(30 + ch.stats.AGI)) dmg = Math.floor(dmg / 2);
+          if (pct(30 + ch.stats.AGI + Math.floor(mod(ch, "resist")))) dmg = Math.floor(dmg / 2);
           this.hurt(ch, dmg, `is scorched for ${dmg}`, { type: "monsterSpell", monster: def });
         }
       } else if (intent.kind === "katino") {
@@ -571,7 +571,8 @@ const Combat = {
       } else if (intent.kind === "bolt") {
         const t = pick(targetPool);
         const isPriest = !!def.priest;
-        const dmg = dice(isPriest ? (def.priest >= 2 ? "2d8" : "1d8") : "1d8");
+        let dmg = dice(isPriest ? (def.priest >= 2 ? "2d8" : "1d8") : "1d8");
+        if (pct(Math.floor(mod(t, "resist")))) dmg = Math.floor(dmg / 2);
         this.say(`A ${def.name} casts ${isPriest ? (def.priest >= 2 ? "BADIAL" : "BADIOS") : "HALITO"}!`);
         this.hurt(t, dmg, `takes ${dmg}`, { type: "monsterSpell", monster: def });
       }

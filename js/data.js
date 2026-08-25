@@ -65,6 +65,11 @@ const ITEMS = {
   SMALLSHIELD: { name: "Small Shield", slot: "shield", ac: 1, price: 20, cls: ["Fighter","Priest","Thief","Bishop","Samurai","Lord"] },
   LARGESHIELD: { name: "Large Shield", slot: "shield", ac: 2, price: 40, cls: ["Fighter","Samurai","Lord"] },
   HELM:        { name: "Helm", slot: "helm", ac: 1, price: 100, cls: ["Fighter","Samurai","Lord"] },
+  // accessories — for the party members who die to fireballs in the back row
+  CLOAK:       { name: "Traveler's Cloak", slot: "cloak", ac: 1, price: 120, cls: null },
+  CLOAKVIT:    { name: "Constitution Cloak", slot: "cloak", ac: 1, mods: { maxhp: 8 }, price: 900, cls: null },
+  RINGVIT:     { name: "Vitality Ring", slot: "ring", mods: { maxhp: 5 }, price: 400, cls: null },
+  RINGWARD:    { name: "Ring of Warding", slot: "ring", mods: { resist: 30 }, price: 600, cls: null },
   P_DIOS:      { name: "Potion of Dios", slot: "potion", use: "heal", dice: "1d8", price: 500, cls: null },
   P_LATUMOFIS: { name: "Potion of Latumofis", slot: "potion", use: "curepoison", price: 300, cls: null },
   // treasure only
@@ -74,7 +79,7 @@ const ITEMS = {
   SHIELD1:     { name: "Shield +1", slot: "shield", ac: 2, price: 700, cls: null, loot: true },
   JEWELEDAMULET: { name: "Jeweled Amulet", slot: "potion", use: "heal", dice: "1d8", price: 5000, cls: null, loot: true },
 };
-const SHOP_STOCK = ["DAGGER","STAFF","SHORTSWORD","LONGSWORD","MACE","FLAIL","ROBES","LEATHER","CHAINMAIL","BREASTPLATE","PLATEMAIL","SMALLSHIELD","LARGESHIELD","HELM","P_DIOS","P_LATUMOFIS"];
+const SHOP_STOCK = ["DAGGER","STAFF","SHORTSWORD","LONGSWORD","MACE","FLAIL","ROBES","LEATHER","CHAINMAIL","BREASTPLATE","PLATEMAIL","SMALLSHIELD","LARGESHIELD","HELM","P_DIOS","P_LATUMOFIS","CLOAK","CLOAKVIT","RINGVIT","RINGWARD"];
 const LOOT_TABLE = {
   1: ["P_DIOS","LEATHER","SMALLSHIELD","MACE","P_LATUMOFIS"],
   2: ["P_DIOS","P_LATUMOFIS","CHAINMAIL","LARGESHIELD","FLAIL","HELM"],

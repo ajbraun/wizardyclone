@@ -12,13 +12,16 @@ const AFFIXES = {
   SOLDIER:  { name: "of the Soldier",  pos: "suf", slots: ["weapon"], mods: { toHit: 2 }, price: 250 },
   HEADSMAN: { name: "of the Headsman", pos: "suf", slots: ["weapon"], dmgPlus: 1, mods: { crit: 2 }, price: 450 },
   // armor / shield / helm
-  STURDY:   { name: "Sturdy",          pos: "pre", slots: ["armor", "shield", "helm"], ac: 1, price: 200 },
-  WARDING:  { name: "of Warding",      pos: "suf", slots: ["armor", "shield", "helm"], ac: 2, price: 400 },
-  CAT:      { name: "of the Cat",      pos: "suf", slots: ["armor", "shield", "helm"], mods: { runChance: 10 }, price: 150 },
-  GILDED:   { name: "Gilded",          pos: "pre", slots: ["armor", "shield", "helm"], mods: { goldGain: 10 }, price: 250 },
-  GRACE:    { name: "of Grace",        pos: "suf", slots: ["armor", "shield", "helm"], mods: { healPower: 2 }, price: 250 },
-  SAGE:     { name: "of the Sage",     pos: "suf", slots: ["armor", "shield", "helm"], mods: { spellPower: 2 }, price: 250 },
-  FORTUNE:  { name: "of Fortune",      pos: "suf", slots: ["armor", "shield", "helm", "weapon"], mods: { crit: 2, goldGain: 5 }, price: 300 },
+  STURDY:   { name: "Sturdy",          pos: "pre", slots: ["armor", "shield", "helm", "cloak"], ac: 1, price: 200 },
+  WARDING:  { name: "of Warding",      pos: "suf", slots: ["armor", "shield", "helm", "cloak"], ac: 2, price: 400 },
+  CAT:      { name: "of the Cat",      pos: "suf", slots: ["armor", "shield", "helm", "cloak"], mods: { runChance: 10 }, price: 150 },
+  GILDED:   { name: "Gilded",          pos: "pre", slots: ["armor", "shield", "helm", "cloak"], mods: { goldGain: 10 }, price: 250 },
+  GRACE:    { name: "of Grace",        pos: "suf", slots: ["armor", "shield", "helm", "cloak", "ring"], mods: { healPower: 2 }, price: 250 },
+  SAGE:     { name: "of the Sage",     pos: "suf", slots: ["armor", "shield", "helm", "cloak", "ring"], mods: { spellPower: 2 }, price: 250 },
+  FORTUNE:  { name: "of Fortune",      pos: "suf", slots: ["armor", "shield", "helm", "weapon", "cloak", "ring"], mods: { crit: 2, goldGain: 5 }, price: 300 },
+  // accessories
+  VIGOR:    { name: "of Vigor",        pos: "suf", slots: ["ring", "cloak"], mods: { maxhp: 5 }, price: 350 },
+  AEGIS:    { name: "of the Aegis",    pos: "suf", slots: ["ring", "cloak"], mods: { resist: 15 }, price: 350 },
 };
 
 const MOD_LABELS = {
@@ -26,6 +29,7 @@ const MOD_LABELS = {
   runChance: "% flee chance", inspect: "% trap inspection", disarm: "% trap disarm",
   xpGain: "% XP gain", goldGain: "% gold gain", spellPower: "spell power",
   healPower: "healing power", swings: "extra swings",
+  maxhp: "max HP", resist: "% spell/breath resist",
 };
 
 // full stat card for an item instance — the System hides nothing
@@ -90,9 +94,9 @@ function IT(entry) {
 
 // depth-banded base pools for generated loot
 const LOOT_BASES = {
-  1: ["DAGGER", "STAFF", "SHORTSWORD", "MACE", "ROBES", "LEATHER", "SMALLSHIELD"],
-  2: ["SHORTSWORD", "LONGSWORD", "FLAIL", "CHAINMAIL", "LARGESHIELD", "HELM"],
-  3: ["LONGSWORD", "FLAIL", "BREASTPLATE", "PLATEMAIL", "LARGESHIELD", "HELM"],
+  1: ["DAGGER", "STAFF", "SHORTSWORD", "MACE", "ROBES", "LEATHER", "SMALLSHIELD", "CLOAK", "RINGVIT"],
+  2: ["SHORTSWORD", "LONGSWORD", "FLAIL", "CHAINMAIL", "LARGESHIELD", "HELM", "CLOAKVIT", "RINGWARD"],
+  3: ["LONGSWORD", "FLAIL", "BREASTPLATE", "PLATEMAIL", "LARGESHIELD", "HELM", "CLOAKVIT", "RINGWARD"],
 };
 
 // quality 0..3 raises affix count; depth raises the base pool band

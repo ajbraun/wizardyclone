@@ -29,14 +29,14 @@ const UI = (() => {
   function clearLog() { logLines.length = 0; document.getElementById("log").innerHTML = ""; }
   function key(k, label) { return `<span class="k">${k}</span>) ${label}`; }
   function statusStr(ch) {
-    if (ch.status === "OK") return ch.hp < ch.maxhp / 4 ? '<span class="bad">OK</span>' : "OK";
+    if (ch.status === "OK") return ch.hp < maxHP(ch) / 4 ? '<span class="bad">OK</span>' : "OK";
     const cls = (ch.status === "DEAD" || ch.status === "ASHES") ? "bad" : "k";
     return `<span class="${cls}">${ch.status}</span>`;
   }
   function renderParty() {
     const rows = Game.party.map((ch, i) => {
       const spStr = spSummary(ch);
-      return `<tr><td>${i + 1}</td><td class="hi">${esc(ch.name)}</td><td>${ch.align[0]}-${esc(ch.cls)}</td><td>${ch.level}</td><td>${acOf(ch)}</td><td>${ch.hp}/${ch.maxhp}</td><td>${spStr}</td><td>${statusStr(ch)}</td><td class="gold">${ch.gold}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td class="hi">${esc(ch.name)}</td><td>${ch.align[0]}-${esc(ch.cls)}</td><td>${ch.level}</td><td>${acOf(ch)}</td><td>${ch.hp}/${maxHP(ch)}</td><td>${spStr}</td><td>${statusStr(ch)}</td><td class="gold">${ch.gold}</td></tr>`;
     }).join("");
     document.getElementById("party").innerHTML = Game.party.length
       ? `<table><tr><th>#</th><th>NAME</th><th>CLASS</th><th>LVL</th><th>AC</th><th>HITS</th><th>SP</th><th>STATUS</th><th>GOLD</th></tr>${rows}</table>`
@@ -73,7 +73,7 @@ const UI = (() => {
     }).join("\n        ");
     return `<span class="hi">${esc(ch.name)}</span>  L${ch.level} ${ch.align} ${esc(ch.race)} ${esc(ch.cls)}\n\n` +
       `${st}\n\n` +
-      `HP ${ch.hp}/${ch.maxhp}   AC ${acOf(ch)}   STATUS ${ch.status}\n` +
+      `HP ${ch.hp}/${maxHP(ch)}   AC ${acOf(ch)}   STATUS ${ch.status}\n` +
       `XP ${ch.xp}  (next level: ${xpForLevel(ch.cls, ch.level + 1)})   <span class="gold">GOLD ${ch.gold}</span>\n\n` +
       (sps ? sps + "\n" : "") +
       `SPELLS: ${esc(spellStr)}\n` +
