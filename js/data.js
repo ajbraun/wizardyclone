@@ -72,6 +72,18 @@ const ITEMS = {
   RINGWARD:    { name: "Ring of Warding", slot: "ring", mods: { resist: 30 }, price: 600, cls: null },
   P_DIOS:      { name: "Potion of Dios", slot: "potion", use: "heal", dice: "1d8", price: 500, cls: null },
   P_LATUMOFIS: { name: "Potion of Latumofis", slot: "potion", use: "curepoison", price: 300, cls: null },
+  // deep-crawl bases (treasure only) — the ladder keeps climbing past Plate Mail
+  FALCHION:    { name: "Falchion", slot: "weapon", dmg: "1d10", price: 400, cls: ["Fighter","Thief","Samurai","Lord","Ninja"], loot: true },
+  WARMAUL:     { name: "War Maul", slot: "weapon", dmg: "2d5+1", price: 700, cls: ["Fighter","Priest","Lord"], loot: true },
+  GREATSWORD:  { name: "Greatsword", slot: "weapon", dmg: "2d8", price: 1500, cls: ["Fighter","Samurai","Lord"], loot: true },
+  RUNEBLADE:   { name: "Runeblade", slot: "weapon", dmg: "1d12+2", price: 3000, cls: ["Fighter","Samurai","Lord","Ninja"], loot: true },
+  ARCSTAFF:    { name: "Arc Staff", slot: "weapon", dmg: "1d8", mods: { spellPower: 2 }, price: 1200, cls: null, loot: true },
+  TOWERSHIELD: { name: "Tower Shield", slot: "shield", ac: 3, price: 800, cls: ["Fighter","Samurai","Lord"], loot: true },
+  DRAGONSCALE: { name: "Dragonscale Armor", slot: "armor", ac: 6, price: 2500, cls: ["Fighter","Samurai","Lord"], loot: true },
+  SHADOWWEAVE: { name: "Shadowweave Robes", slot: "armor", ac: 3, mods: { resist: 10 }, price: 1800, cls: null, loot: true },
+  GREATHELM:   { name: "Great Helm", slot: "helm", ac: 2, price: 600, cls: ["Fighter","Samurai","Lord"], loot: true },
+  DUELCLOAK:   { name: "Duelist's Cloak", slot: "cloak", ac: 2, price: 900, cls: null, loot: true },
+  SIGNET:      { name: "Deep Signet", slot: "ring", mods: { maxhp: 8 }, price: 1400, cls: null, loot: true },
   // treasure only
   LONGSWORD1:  { name: "Long Sword +1", slot: "weapon", dmg: "1d8+2", price: 1000, cls: ["Fighter","Samurai","Lord"], loot: true },
   MACE1:       { name: "Mace +1", slot: "weapon", dmg: "2d3+2", price: 900, cls: ["Fighter","Priest","Bishop","Lord"], loot: true },

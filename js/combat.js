@@ -445,6 +445,8 @@ const Combat = {
           mm.hp = 0; kills++; slain = true;
           this.xpTotal += g.def.xp;
           Events.emit("kill", { by: ch, monster: g.def, sleeping: asleep, how: "melee", crit });
+          const ls = Math.floor(mod(ch, "lifesteal"));
+          if (ls) applyHeal(ch, ls, { type: "lifesteal" });
         }
       }
       Events.emit("swing", { ch, monster: g.def, hit: landed, dmg, kill: slain, sleeping: asleep, crit });
