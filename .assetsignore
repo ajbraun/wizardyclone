@@ -6,3 +6,4 @@ wrangler.jsonc
 .gitignore
 
 assets/monsters/*.md
+assets/environment/*.md

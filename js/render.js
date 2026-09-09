@@ -6,75 +6,176 @@ const Render = (() => {
   let activeEncounter = null;
   function clearEncounter(label) {
     activeEncounter = null;
+    activeMaze = null;
     document.getElementById("view").ariaLabel = label;
   }
   function init() { ctx = document.getElementById("view").getContext("2d"); }
   function px(x, t) { return CX + (x * KX) / t; }
   function py(y, t) { return CY + (y * KY) / t; }
-  function quad(pts) {
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-    ctx.closePath();
-    ctx.fillStyle = "#000";
-    ctx.fill();
-    ctx.stroke();
+  let activeMaze = null;
+  let stoneTexture = null;
+  let stoneReady = false;
+  let mazeTint = "#d8ffd8";
+  function loadStone() {
+    if (stoneTexture || typeof Image === "undefined") return;
+    stoneTexture = new Image();
+    stoneTexture.onload = () => {
+      stoneReady = true;
+      if (activeMaze) draw(...activeMaze);
+    };
+    stoneTexture.onerror = () => { stoneReady = false; };
+    stoneTexture.src = "assets/environment/dungeon-stone.png";
   }
-  function outline(pts) {
+  function polygon(pts, fill, stroke) {
     ctx.beginPath();
     ctx.moveTo(pts[0][0], pts[0][1]);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
     ctx.closePath();
-    ctx.stroke();
+    ctx.fillStyle = fill; ctx.fill();
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+  function faceRect(project, u, v, w, h, fill, stroke) {
+    polygon([project(u,v), project(u+w,v), project(u+w,v+h), project(u,v+h)], fill, stroke);
+  }
+  function visibleFace(pts) {
+    return Math.max(...pts.map(p => p[0])) > 0 && Math.min(...pts.map(p => p[0])) < 560;
+  }
+  function masonry(project, depth, side) {
+    const pts = [project(0,0), project(1,0), project(1,1), project(0,1)];
+    if (!visibleFace(pts)) return false;
+    polygon(pts, "#353730");
+    if (stoneReady) {
+      if (!side) {
+        ctx.drawImage(stoneTexture, pts[0][0], pts[0][1], pts[1][0]-pts[0][0], pts[3][1]-pts[0][1]);
+      } else {
+        // Vertical pixel strips provide perspective-correct texture sampling:
+        // depth is reciprocal in screen x, not linear across the trapezoid.
+        const x0 = pts[0][0], x1 = pts[1][0];
+        const start = Math.max(0, Math.ceil(Math.min(x0,x1)));
+        const end = Math.min(560, Math.ceil(Math.max(x0,x1)));
+        for (let sx = start; sx < end; sx++) {
+          const q = (sx + 0.5 - CX);
+          if (Math.abs(q) < 0.01) continue;
+          const t = side.edge * KX / q;
+          const u = Math.max(0, Math.min(0.999, (t - side.t0) / (side.t1 - side.t0)));
+          const top = py(-0.5,t), bottom = py(0.5,t);
+          const texX = u * (stoneTexture.naturalWidth-1);
+          ctx.drawImage(stoneTexture, texX, 0, 1, stoneTexture.naturalHeight, sx, top, 1.05, bottom-top);
+        }
+      }
+    } else {
+      // Shaded masonry remains usable offline and during the first download.
+      for (let row = 0; row < 4; row++) {
+        for (let col = -1; col < 3; col++) {
+          const u0 = Math.max(0, col / 3 + (row % 2) / 6);
+          const u1 = Math.min(1, (col+1) / 3 + (row % 2) / 6);
+          if (u1 <= u0) continue;
+          const n = 80 + ((row * 17 + col * 13 + 39) % 24);
+          faceRect(project,u0+.005,row/4+.006,u1-u0-.01,.238,`rgb(${n},${n},${n-8})`,"#262923");
+        }
+      }
+    }
+    ctx.save();
+    ctx.globalAlpha = 0.09;
+    polygon(pts, mazeTint);
+    ctx.restore();
+    polygon(pts, `rgba(5,9,8,${Math.min(.84,.20 + depth*.16 + (side ? .09 : 0))})`);
+    return true;
+  }
+  function timberDoor(project, depth) {
+    // Recessed iron-bound oak, framed by individual stone blocks. All details
+    // use the wall's own projection, including doors seen obliquely.
+    faceRect(project,.13,.12,.74,.88,"#171b17","#777969");
+    for (let row=0; row<5; row++) {
+      for (const u of [.13,.78]) faceRect(project,u,.12+row*.176,.09,.17,"#656659","#34372f");
+    }
+    for (let col=0; col<5; col++) faceRect(project,.22+col*.112,.12,.107,.10,"#777668","#34372f");
+    faceRect(project,.22,.225,.56,.775,"#171511");
+    for (let plank=0; plank<7; plank++) {
+      const u=.229+plank*.078;
+      const n=57+(plank*13)%18;
+      faceRect(project,u,.233,.071,.767,`rgb(${n+24},${n+5},${n-17})`,"#30271c");
+      for (let grain=0;grain<3;grain++) faceRect(project,u+.012+grain*.019,.25,.003,.73,"#31291d55");
+    }
+    for (const v of [.37,.77]) {
+      faceRect(project,.224,v,.552,.046,"#282d2a","#777b69");
+      for (const u of [.25,.39,.60,.73]) faceRect(project,u,v+.014,.012,.013,"#aaa18a");
+    }
+    faceRect(project,.67,.54,.038,.10,"#282b26","#8a8269");
+    const ring=[];
+    for(let i=0;i<16;i++) {const a=i*Math.PI/8;ring.push(project(.689+Math.cos(a)*.028,.607+Math.sin(a)*.034));}
+    polygon(ring,"#171a15","#b6a77c");
+    const pts=[project(.13,.12),project(.87,.12),project(.87,1),project(.13,1)];
+    polygon(pts,`rgba(5,9,8,${Math.min(.8,depth*.15)})`);
   }
   function frontWall(j, dpt, v) {
-    const t = dpt + 0.5;
-    const x1 = j - 0.5, x2 = j + 0.5;
-    quad([[px(x1, t), py(-0.5, t)], [px(x2, t), py(-0.5, t)], [px(x2, t), py(0.5, t)], [px(x1, t), py(0.5, t)]]);
-    if (v === 2) {
-      const dx1 = x1 + 0.2, dx2 = x2 - 0.2;
-      outline([[px(dx1, t), py(-0.22, t)], [px(dx2, t), py(-0.22, t)], [px(dx2, t), py(0.5, t)], [px(dx1, t), py(0.5, t)]]);
-    }
+    const t=dpt+.5;
+    const project=(u,v)=>[px(j-.5+u,t),py(v-.5,t)];
+    if (masonry(project,dpt,null) && v===2) timberDoor(project,dpt);
   }
   function sideWall(xEdge, dpt, v) {
-    const t0 = Math.max(dpt - 0.5, 0.28), t1 = dpt + 0.5;
-    quad([[px(xEdge, t0), py(-0.5, t0)], [px(xEdge, t1), py(-0.5, t1)], [px(xEdge, t1), py(0.5, t1)], [px(xEdge, t0), py(0.5, t0)]]);
-    if (v === 2) {
-      const ta = t0 + (t1 - t0) * 0.25, tb = t1 - (t1 - t0) * 0.25;
-      outline([[px(xEdge, ta), py(-0.22, ta)], [px(xEdge, tb), py(-0.22, tb)], [px(xEdge, tb), py(0.5, tb)], [px(xEdge, ta), py(0.5, ta)]]);
+    const t0=Math.max(dpt-.5,.28),t1=dpt+.5;
+    const project=(u,v)=>[px(xEdge,t0+(t1-t0)*u),py(v-.5,t0+(t1-t0)*u)];
+    if (masonry(project,dpt,{edge:xEdge,t0,t1}) && v===2) timberDoor(project,dpt);
+  }
+  function floorAndCeiling(md) {
+    ctx.fillStyle="#090e0d";ctx.fillRect(0,0,560,392);
+    for(let dd=md+1;dd>=0;dd--) {
+      const near=Math.max(.28,dd-.5),far=dd+.5;
+      for(let j=-4;j<=4;j++) {
+        const n=Math.round(64/(1+dd*.34))+((j+dd+20)%3)*3;
+        for(const sign of [-1,1]) {
+          const shade=sign===1?n:Math.round(n*.42);
+          const pts=[[px(j-.5,near),py(sign*.5,near)],[px(j+.5,near),py(sign*.5,near)],
+            [px(j+.5,far),py(sign*.5,far)],[px(j-.5,far),py(sign*.5,far)]];
+          polygon(pts,`rgb(${shade+3},${shade+3},${shade-2})`,"#1b211c");
+          if(sign===1) {
+            // A worn inset slab gives the floor thickness, rather than a grid.
+            polygon([[px(j-.47,near+.025),py(.5,near+.025)],[px(j+.47,near+.025),py(.5,near+.025)],
+              [px(j+.47,far-.025),py(.5,far-.025)],[px(j-.47,far-.025),py(.5,far-.025)]],
+              `rgba(146,137,110,${.07/(1+dd)})`);
+          }
+        }
+      }
     }
+  }
+  function atmosphere() {
+    const light=ctx.createRadialGradient(280,170,40,280,190,350);
+    if (!light || typeof light.addColorStop!=="function") return;
+    light.addColorStop(0,"rgba(224,181,108,.04)");
+    light.addColorStop(.55,"rgba(24,22,12,.03)");
+    light.addColorStop(1,"rgba(0,5,4,.62)");
+    ctx.fillStyle=light;ctx.fillRect(0,0,560,392);
   }
   function draw(map, x, y, dir, maxDepth) {
     clearEncounter("First-person dungeon view");
     if (!ctx) init();
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, 560, 392);
-    ctx.strokeStyle = map.tint || "#d8ffd8";
-    ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
-    const f = DIRS[dir], r = DIRS[(dir + 1) % 4];
-    const left = (dir + 3) % 4, right = (dir + 1) % 4;
-    const md = maxDepth || 3;
-    const cell = (dd, j) => ({ x: x + f.dx * dd + r.dx * j, y: y + f.dy * dd + r.dy * j });
-    for (let dd = md; dd >= 0; dd--) {
-      const order = [-3, 3, -2, 2, -1, 1, 0];
-      // front walls first (they sit deeper than this layer's side walls)
-      for (const j of order) {
-        const c = cell(dd, j);
-        const w = cellWalls(map, c.x, c.y);
-        if (w[dir]) frontWall(j, dd, w[dir]);
+    activeMaze=[map,x,y,dir,maxDepth];
+    loadStone();
+    mazeTint=map.tint || "#d8ffd8";
+    const md=maxDepth || 3;
+    floorAndCeiling(md);
+    ctx.lineJoin="round";
+    const f=DIRS[dir],r=DIRS[(dir+1)%4];
+    const left=(dir+3)%4,right=(dir+1)%4;
+    const cell=(dd,j)=>({x:x+f.dx*dd+r.dx*j,y:y+f.dy*dd+r.dy*j});
+    for(let dd=md;dd>=0;dd--) {
+      const order=[-3,3,-2,2,-1,1,0];
+      for(const j of order) {
+        const c=cell(dd,j),w=cellWalls(map,c.x,c.y);
+        if(w[dir]) frontWall(j,dd,w[dir]);
       }
-      for (const j of order) {
-        const c = cell(dd, j);
-        const w = cellWalls(map, c.x, c.y);
-        if (j > 0 && w[left]) sideWall(j - 0.5, dd, w[left]);
-        if (j < 0 && w[right]) sideWall(j + 0.5, dd, w[right]);
-        if (j === 0) {
-          if (w[left]) sideWall(-0.5, dd, w[left]);
-          if (w[right]) sideWall(0.5, dd, w[right]);
+      for(const j of order) {
+        const c=cell(dd,j),w=cellWalls(map,c.x,c.y);
+        if(j>0 && w[left]) sideWall(j-.5,dd,w[left]);
+        if(j<0 && w[right]) sideWall(j+.5,dd,w[right]);
+        if(j===0) {
+          if(w[left]) sideWall(-.5,dd,w[left]);
+          if(w[right]) sideWall(.5,dd,w[right]);
         }
       }
     }
+    atmosphere();
   }
   function blank(text) {
     clearEncounter(text || "Dungeon gate");
@@ -416,6 +517,7 @@ const Render = (() => {
     const path = encounterArt(def, options.floor);
     const scene = { def, count, options, path };
     activeEncounter = scene;
+    activeMaze = null;
     document.getElementById("view").ariaLabel = `${def.name}, ${count} remaining${options.intent ? ", " + options.intent : ""}`;
     if (path && typeof Image !== "undefined") {
       let entry = encounterImages.get(path);

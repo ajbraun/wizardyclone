@@ -13,7 +13,7 @@ no dependencies. Saves live in your browser's localStorage.
 
 - **Classic core** — 5 races, 8 classes (roll a Ninja, we dare you), mage &
   priest spellbooks (HALITO, KATINO, DIOS...), a party of six, first-person
-  wireframe maze, turn-based group combat, chests with traps, and a Temple
+  textured stone maze, turn-based group combat, chests with traps, and a Temple
   that can fail your resurrection.
 - **The System** — 60+ achievements with commentary, use-based skills
   (*Brawling*, *Door Shoulderer*, *Antivenin Lifestyle*), titles, loot boxes,
@@ -53,6 +53,14 @@ Click highlighted menu actions or use their keyboard shortcuts. Arrows/WASD to m
 The interface adapts to narrow screens, with readable party health meters and a
 System broadcast log. Character naming and some detailed selections still use
 the keyboard.
+
+## Dungeon visuals
+
+Exploration uses perspective-correct stone textures, shaded masonry, recessed
+iron-bound wooden doors, and floor slabs. Distance shading and subtle biome tints
+keep corridors readable. The texture loads once per session, with procedural
+masonry as a fallback. Lighting spells still extend the visible distance, and
+all walls, doors, and openings follow the existing maze geometry.
 
 ## Encounter artwork
 
