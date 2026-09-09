@@ -29,6 +29,10 @@ for(const def of definitions) {
 c.assert(g.get('Render.encounterArt({name:"Iron Ghoul"},13)')==="assets/monsters/iron-ghoul.jpg","Iron Ghoul works at all depths");
 c.assert(g.get('Render.encounterArt({name:"Gruzzik",base:"Iron Ghoul"},8)')==="assets/monsters/iron-ghoul.jpg","elite retains base species");
 c.assert(g.get('Render.encounterArt({name:"Feral Ghoul"},8)')==="assets/monsters/ghoul.jpg","ordinary ghouls have their own illustration");
+c.assert(g.get('Render.encounterArt({name:"Death Priest"},8)')==="assets/monsters/priest.jpg","death priests resolve to cleric artwork");
+c.assert(g.get('Render.encounterArt({name:"Venomous Mage"},8)')==="assets/monsters/mage.jpg","venomous mages resolve to spellcaster artwork");
+c.assert(!require("fs").readFileSync("assets/monsters/priest.jpg").equals(require("fs").readFileSync("assets/monsters/rogue.jpg")),"priest art is distinct from rogue art");
+c.assert(!require("fs").readFileSync("assets/monsters/mage.jpg").equals(require("fs").readFileSync("assets/monsters/rogue.jpg")),"mage art is distinct from rogue art");
 g.run('Render.monsterBox({id:"D8M0",name:"Dire Hound",art:"beast"},3,{floor:8})');
 c.assert(paints.length===0 && images.length===1 && labels.includes("Loading illustration…"),"pending image shows neutral loading state");
 c.assert(!rects.some(a=>a[0]===160 && a[1]===34 && a[2]===240 && a[3]===252),"old pixel portrait is never drawn");
