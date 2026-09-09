@@ -58,11 +58,12 @@ the keyboard.
 
 The Warrens (floors 4–8) now has illustrated encounters for hounds, scorpions,
 and ogres, including their named elite variants, plus bespoke art for its Warden,
-Mother of Thousands. Scenes fill the viewport and show the surviving group count
+Mother of Thousands. Iron Ghouls also have a dedicated illustration at every depth,
+including named elite variants. Scenes fill the viewport and show the surviving group count
 and any announced attack. Other species keep their original portraits; those also
 serve as the fallback while images load or if an image fails to load.
 
-Open `test/encounter-preview.html` to view the four scenes without touching a save.
+Open `test/encounter-preview.html` to view the five scenes without touching a save.
 Assets and their generation prompts are in `assets/monsters/`. Images are fetched
 on demand and cached for the session. No save migration or balance changes.
 

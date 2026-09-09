@@ -5,4 +5,4 @@ wrangler.jsonc
 .assetsignore
 .gitignore
 
-assets/monsters/PROMPTS.md
+assets/monsters/*.md

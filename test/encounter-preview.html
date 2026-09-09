@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="../">
-<title>Warrens — Encounter Art Preview</title>
+<title>Bestiary — Encounter Art Preview</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main id="game">
-<header class="masthead"><div><span class="eyebrow">BESTIARY / THE WARRENS</span><h1>HOSTILE CONTACT</h1></div></header>
+<header class="masthead"><div><span class="eyebrow">BESTIARY / ENCOUNTER ART</span><h1>HOSTILE CONTACT</h1></div></header>
 <div id="top">
 <div id="viewwrap"><canvas id="view" width="560" height="392" aria-label="Encounter artwork"></canvas></div>
 <section id="panel" aria-label="Preview controls" style="white-space:normal">
 <h2>MEET THE LOCALS</h2>
-<p class="dim">Illustrated encounters for floors 4–8. Select a creature to preview its artwork using the game's renderer. This page never accesses your save.</p>
+<p class="dim">Illustrated Warrens encounters and the Iron Ghoul. Select a creature to preview its artwork using the game's renderer. This page never accesses your save.</p>
 <div id="choices" style="margin:20px 0"></div>
 <label><input id="warning" type="checkbox"> Preview attack warning</label>
 <p class="dim" style="margin-top:20px">The original portrait appears while the illustration downloads. In combat, the caption shows the actual surviving group count and announced attack.</p>
@@ -28,6 +28,7 @@ const creatures = [
   {id:"PREVIEW_HOUND", name:"Dire Hound", art:"beast"},
   {id:"PREVIEW_SCORPION", name:"Venomous Scorpion", art:"bug"},
   {id:"PREVIEW_OGRE", name:"Iron Ogre", art:"brute"},
+  {id:"PREVIEW_GHOUL", name:"Iron Ghoul", art:"beast"},
 ];
 let selected = 0;
 function preview() {

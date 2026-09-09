@@ -9,10 +9,13 @@ class TestImage {
 }
 const context2d = new Proxy({}, { get: (_, key) => key === "drawImage" ? (...args) => paints.push(args) : key === "fillText" ? text => labels.push(text) : () => {}, set: () => true });
 const g = boot({ Image: TestImage, context2d });
-for (const [name, file] of [["Dire Hound", "warrens-hound"], ["Venomous Scorpion", "warrens-scorpion"], ["Iron Ogre", "warrens-ogre"]]) {
+for (const [name, file] of [["Dire Hound", "warrens-hound"], ["Venomous Scorpion", "warrens-scorpion"], ["Iron Ogre", "warrens-ogre"], ["Iron Ghoul", "iron-ghoul"]]) {
   const asset = g.get(`Render.encounterArt({name: ${JSON.stringify(name)}}, 8)`);
   c.assert(asset === `assets/monsters/${file}.png` && fs.existsSync(path.join(ROOT, asset)), name + " resolves to an existing species asset");
 }
+c.assert(g.get('Render.encounterArt({name:"Iron Ghoul"}, 13)') === "assets/monsters/iron-ghoul.png", "Iron Ghoul artwork works beyond the Warrens");
+c.assert(g.get('Render.encounterArt({name:"Gruzzik", base:"Iron Ghoul"}, 8)') === "assets/monsters/iron-ghoul.png", "named Iron Ghoul retains artwork");
+c.assert(g.get('Render.encounterArt({name:"Feral Ghoul"}, 8)') === null, "other ghoul variants do not inherit iron armor");
 c.assert(g.get('Render.encounterArt(WARDENS[8], 8)').endsWith("mother-of-thousands.png"), "Warden has bespoke artwork");
 c.assert(g.get('Render.encounterArt({name:"Gruzzik", base:"Dire Hound"}, 8)').endsWith("warrens-hound.png"), "named elite retains species artwork");
 c.assert(g.get('Render.encounterArt({name:"Needle Wasp"}, 8)') === null, "uncommissioned species keeps fallback");

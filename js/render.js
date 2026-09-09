@@ -369,8 +369,10 @@ const Render = (() => {
   // generated definitions or consuming RNG (existing saves keep their floors).
   function encounterArt(def, floor) {
     if (def.id === "WARDEN8") return "assets/monsters/mother-of-thousands.png";
-    if (floor < 4 || floor > 8 || !Number.isFinite(floor)) return null;
     const species = def.base || def.name || "";
+    // This species-specific scene works at any depth, including named elites.
+    if (/\biron ghoul\b/i.test(species)) return "assets/monsters/iron-ghoul.png";
+    if (floor < 4 || floor > 8 || !Number.isFinite(floor)) return null;
     for (const name of ["hound", "scorpion", "ogre"]) {
       if (new RegExp("\\b" + name + "\\b", "i").test(species)) {
         return "assets/monsters/warrens-" + name + ".png";

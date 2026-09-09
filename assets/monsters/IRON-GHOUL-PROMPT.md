@@ -1,0 +1,6 @@
+# Iron Ghoul
+
+Generated with the built-in image generation tool. Asset: `iron-ghoul.png`.
+Used for Iron Ghouls and their named elite variants at all depths.
+
+Use case: stylized-concept. Asset type: landscape 3:2 full-scene encounter illustration for a dark fantasy dungeon crawler. Subject: a single IRON GHOUL, a hunched predatory undead humanoid, long sinewy arms, clawed fingers, corpse-gray leathery skin, hollow cheeks and a snarling mouth with crooked teeth; crudely riveted rusty iron plates and shackles fused around its shoulders, forearms and ribcage. Clearly an undead humanoid, not a wolf, not a skeleton, not a robot. Scene: a dim ancient stone dungeon passage with a few roots and damp masonry, background fading into darkness so it suits different dungeon floors. Composition: central looming creature approaching viewer at low eye level, face and clawed hands within central 65%, important details clear of upper and lower 15% reserved for game HUD. Polished painterly naturalistic dark fantasy game key art, cinematic chiaroscuro with readable face and anatomy, moss-green black shadows, amber torch rim light, detailed corroded iron and leathery skin, subtle cold glow in eyes. Match a grimy, threatening illustrated dungeon bestiary. No text, no UI, no border, no watermark, no pixel art, no graphic gore.
