@@ -265,221 +265,105 @@ const Render = (() => {
     ctx.closePath();
     ctx.fill();
   }
-  // ---------------------------------------------------------------- monster art
-  // Chunky pixel-art portraits, authored via test/pixart workbench (scratchpad).
-  // Palette chars: o bright, g mid, d dark, k near-black, r accent, y gold.
-  const SPRITES = {
-    blob: [
-      "......................",
-      "......................",
-      "......................",
-      "........gggggg........",
-      "......gggggggggg......",
-      ".....oggggggggggggd...",
-      "....ooggooogggggggd...",
-      "...oogggoooogggggggd..",
-      "...ogggggooggggggggd..",
-      "..oggggkkggggggkkgggd.",
-      "..oggggkrggggggkrgggd.",
-      ".ogggggggggggggggggdd.",
-      ".oggggggggggggggggggd.",
-      ".ogggggkkkkkkkgggggdd.",
-      ".oggggggggggggggggggd.",
-      ".odggggggggggggggggdd.",
-      "..dggggggggggggggggd..",
-      "..ddgggdgggggggdgggd..",
-      "...ddddggddgddggddd...",
-      ".....dd.ddd..ddd.dd...",
-      "......................",
-      "......................",
-    ],
-    humanoid: [
-      "......................",
-      "......................",
-      "......gggggggggg......",
-      ".....oggggggggggo.....",
-      "....oggggggggggggo....",
-      "...oggggggggggggggo...",
-      "...ogggggddddgggggo...",
-      "...oggdkkkggkkkdggo...",
-      ".oogggdkrkggkrkdgggoo.",
-      ".ooogggkkkggkkkgggooo.",
-      "..oogggggdggdgggggoo..",
-      "....gogggdggdgggog....",
-      "...ggokkkkkkkkkkogg...",
-      "....gggggggggggggg....",
-      ".....dggggggggggd.....",
-      "......dggggggggd......",
-      "..ooggggggggggggggoo..",
-      ".ooggggggggggggggggoo.",
-      "oogggggggddddgggggggoo",
-      "ogggggddddddddddgggggo",
-      "ogddddddddddddddddddgo",
-      "......................",
-    ],
-    caster: [
-      "......................",
-      ".........ogg..........",
-      "........oggdd.........",
-      ".......ogggddd........",
-      "......oggkkkddd.......",
-      ".....oggkkkkkddd......",
-      ".....ogkkkkkkkdd......",
-      "....ogkkyykkyykdd.....",
-      "....ogkkkkkkkkkdd.....",
-      "....ogkkkkkkkkkdd.....",
-      ".....ogkkkkkkkdd......",
-      "......oggdddddd.......",
-      "....ooggggggdddd......",
-      "...ooggggggggddddd....",
-      "..oyyoggggggggdddddd..",
-      "..oyygggggggggddddd...",
-      "...oogdggggggggdddd...",
-      "..oggddggggggggddddd..",
-      "..ogggdggggggggdddddd.",
-      ".oggggggggggggggddddd.",
-      ".oggggggggggggggggddd.",
-      "......................",
-    ],
-    undead: [
-      "......................",
-      "....oggggggggggggo....",
-      "...oggggggggggggggo...",
-      "..oggggggggggggggggo..",
-      ".oggggggggggggggggggo.",
-      ".ogggggggg..ggggggggo.",
-      ".ogggkkkkggggkkkkgggo.",
-      ".oggkkkkkkggkkkkkkggo.",
-      ".oggkkrkkkggkkkrkkggo.",
-      ".oggkkkkkkggkkkkkkggo.",
-      "..ggggkkggggggkkgggg..",
-      "..gggggggkkkkggggggg..",
-      "...ggggggkkkkgggggg...",
-      "...dggggggggggggggd...",
-      "....kkkkkkkkkkkkkk....",
-      "....gokokokkokokog....",
-      "....kkkkkkkkkkkkkk....",
-      ".....dddddddddddd.....",
-      "......................",
-      "......................",
-      "......................",
-      "......................",
-    ],
-    beast: [
-      "......................",
-      "...gd.....gd..........",
-      "..oggd...oggd.........",
-      "..ogggd.oggggd........",
-      "..oggggggggggdd.......",
-      ".oggggggggggggdd......",
-      ".ogggggggggggggdd.....",
-      ".oggkrrggggggggggd....",
-      ".oggkkkgggggggggggdd..",
-      "oggggggggggggggggkkd..",
-      "oggggggggggkkkkkkkkk..",
-      "ogggggggggkokokokk....",
-      ".dggggggggkk..........",
-      ".dgggggggggkokok......",
-      "..dggggggggkkkkk......",
-      "..ddggggggggggd.......",
-      "...ddggggggggd........",
-      "....ddggggggd.........",
-      ".....ddgggggd.........",
-      "......ddggggd.........",
-      ".......dddddd.........",
-      "......................",
-    ],
-    bug: [
-      "......................",
-      "......................",
-      "......................",
-      "......................",
-      "......................",
-      "......................",
-      "o.....ooggggggoo.....o",
-      "oo...oggggggggggo...oo",
-      ".oo.oggggggggggggo.oo.",
-      "..ooogrgrggggrgrgooo..",
-      "...oogkkkggggkkkgoo...",
-      "...oggkkrggggrkkggo...",
-      "oo.oggggggggggggggo.oo",
-      "oooogggggdggdgggggoooo",
-      "..oogggdkkggkkdgggoo..",
-      "...ogggdkkggkkdgggo...",
-      ".oo.ogg.kkggkk.ggo.oo.",
-      "oo......ko..ok......oo",
-      "o....................o",
-      "......................",
-      "......................",
-      "......................",
-    ],
-    drake: [
-      "......................",
-      "....od................",
-      "...ogdd..od...........",
-      "...oggd..ogd..........",
-      "....oggdoggggdd.......",
-      "....oggggggggggdd.....",
-      "...oggkkrggggggggd....",
-      "...ogggkkgggggggggd...",
-      "..oggggggggggggggggd..",
-      "..ogggggggggkkkkkkkkd.",
-      ".oggdggggggkokokoyyy..",
-      ".ogddgggggkkkkkkyyyyy.",
-      ".oggggggggkokokoyyy...",
-      "..oggggggggkkkkkyy....",
-      "..odgggggggggd..y.....",
-      "...odggggggd..........",
-      "...oddggggggd.........",
-      "....oddggggggd........",
-      ".....oddggggggd.......",
-      "......oddggggdd.......",
-      ".......ddddddd........",
-      "......................",
-    ],
-    brute: [
-      "......................",
-      ".ogd..............dgo.",
-      ".oggd............dggo.",
-      "..oggd..........dggo..",
-      "..oggdggggggggggdggo..",
-      "...oggggggggggggggo...",
-      "....gkkrkkggkkrkkg....",
-      "....gggggggggggggg....",
-      "..d.gggggkggkggggg.d..",
-      ".dd.ggggkkkkkkgggg.dd.",
-      ".ddd.ggokkkkkkogg.ddd.",
-      ".dddd.gggggggggg.dddd.",
-      "odddd.gggggggggg.ddddo",
-      "odddoggggggggggggodddo",
-      "oddoggggggggggggggoddo",
-      "oddggggggggggggggggddo",
-      "oddggggggggggggggggddo",
-      ".ddggggggggggggggggdd.",
-      ".ddgggddddddddddgggdd.",
-      "..ddggddddddddddggdd..",
-      "...ddddddd..ddddddd...",
-      "......................",
-    ],
+  // Artwork selection never consumes RNG or changes generated monster data.
+  const CAMPAIGN_SCENES = {
+    SLIME:"slime", KOBOLD:"kobold", GIANTRAT:"giant-rat", ORC:"orc",
+    ROGUE:"rogue", BUSHWACKER:"rogue", SKELETON:"skeleton", ZOMBIE:"zombie", CRUD:"crud",
+    MAGE1:"mage", MAGE5:"mage", PRIEST1:"priest", PRIEST3:"priest", WOLF:"hound",
+    SPIDER:"spider", SAMURAI3:"samurai", GARGOYLE:"gargoyle", DRAGONFLY:"dragon-fly",
+    BEETLE:"beetle", WEREWOLF:"werewolf", SHADE:"shade", APPRENTICE:"apprentice",
   };
-
-  const SPRITE_PAL = { o: "#d8ffd8", g: "#7fbf7f", d: "#396639", k: "#091409", y: "#ffd700" };
-  const SPRITE_ACCENTS = ["#ff5555", "#ffd700", "#e8ffe8"]; // per-species eye color
-  function mhash(s) { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
-  // Match species, including an elite's original species, without changing
-  // generated definitions or consuming RNG (existing saves keep their floors).
-  function encounterArt(def, floor) {
-    if (def.id === "WARDEN8") return "assets/monsters/mother-of-thousands.png";
-    const species = def.base || def.name || "";
-    // This species-specific scene works at any depth, including named elites.
-    if (/\biron ghoul\b/i.test(species)) return "assets/monsters/iron-ghoul.png";
-    if (floor < 4 || floor > 8 || !Number.isFinite(floor)) return null;
-    for (const name of ["hound", "scorpion", "ogre"]) {
-      if (new RegExp("\\b" + name + "\\b", "i").test(species)) {
-        return "assets/monsters/warrens-" + name + ".png";
+  const SPECIES_SCENES = [
+    ["iron ghoul","iron-ghoul"], ["bone knight","bone-knight"], ["death priest","priest"],
+    ["flame mage","mage"], ["needle wasp","needle-wasp"],
+    ["ogre","ogre"], ["troll","troll"], ["minotaur","minotaur"], ["golem","golem"],
+    ["stalker","stalker"], ["hound","hound"], ["ghoul","ghoul"], ["marauder","rogue"],
+    ["warlock","mage"], ["hexer","mage"], ["cultist","priest"], ["acolyte","priest"],
+    ["drake","drake"], ["salamander","salamander"], ["wyrm","wyrm"],
+    ["wight","wight"], ["revenant","revenant"], ["scorpion","scorpion"], ["widow","spider"],
+  ];
+  function encounterArt(def) {
+    let name;
+    if (def.id === "WARDEN8") name = "mother-of-thousands";
+    else if (/^WARDEN(13|18|23|28|33)$/.test(def.id || "")) name = def.id.toLowerCase();
+    else name = CAMPAIGN_SCENES[def.id];
+    if (!name) {
+      const species = def.base || def.name || "";
+      const match = SPECIES_SCENES.find(([word]) => new RegExp("\\b"+word+"\\b", "i").test(species));
+      name = match ? match[1] : ({blob:"slime",humanoid:"rogue",caster:"mage",undead:"wight",beast:"stalker",bug:"beetle",drake:"drake",brute:"golem"}[def.art] || "stalker");
+    }
+    return "assets/monsters/" + name + ".jpg";
+  }
+  const chestArt = opened => "assets/monsters/chest-" + (opened ? "open" : "closed") + ".jpg";
+  const imageQueue = [];
+  let imageLoads = 0;
+  let preloadedMap = null;
+  let preloadTargets = new Set();
+  function pruneImages() {
+    // Keep decoded-image memory bounded while retaining the current floor.
+    for (const [path, entry] of encounterImages) {
+      if (encounterImages.size <= 18) break;
+      if ((entry.status === "ready" || entry.status === "failed") &&
+          (!activeEncounter || activeEncounter.path !== path) && !preloadTargets.has(path)) encounterImages.delete(path);
+    }
+  }
+  function pumpImages() {
+    while (imageLoads < 3 && imageQueue.length) {
+      const entry = imageQueue.shift();
+      entry.status = "loading";
+      imageLoads++;
+      const complete = ok => {
+        entry.status = ok ? "ready" : "failed";
+        imageLoads--;
+        entry.image.onload = entry.image.onerror = null;
+        if (activeEncounter && activeEncounter.path === entry.path) {
+          if (ok) paintEncounter(entry.image, activeEncounter);
+          else pendingScene(activeEncounter, true);
+        }
+        pruneImages();
+        pumpImages();
+      };
+      entry.image.onload = () => complete(true);
+      entry.image.onerror = () => complete(false);
+      entry.image.src = entry.path;
+    }
+  }
+  function sceneImage(path, priority = false) {
+    if (typeof Image === "undefined") return null;
+    let entry = encounterImages.get(path);
+    if (!entry) {
+      entry = { path, image:new Image(), status:"queued" };
+      encounterImages.set(path,entry);
+      if (priority) imageQueue.unshift(entry); else imageQueue.push(entry);
+    } else {
+      encounterImages.delete(path); encounterImages.set(path,entry);
+      if (priority && entry.status === "queued") {
+        imageQueue.splice(imageQueue.indexOf(entry),1); imageQueue.unshift(entry);
       }
     }
-    return null;
+    pumpImages();
+    pruneImages();
+    return entry;
+  }
+  function preloadFloor(map, floor) {
+    if (typeof Image === "undefined" || preloadedMap === map) return;
+    preloadedMap = map;
+    const defs = (map.table || []).map(([id]) => MONSTERS[id]).filter(Boolean);
+    if (WARDENS[floor]) defs.push(WARDENS[floor]);
+    if (floor === 3) defs.push(MONSTERS.APPRENTICE);
+    preloadTargets = new Set([...defs.map(encounterArt),chestArt(false),chestArt(true)]);
+    // Discard queued work for a floor the player has already left.
+    for (let i=imageQueue.length-1;i>=0;i--) {
+      const entry=imageQueue[i];
+      if (!preloadTargets.has(entry.path) && (!activeEncounter || activeEncounter.path!==entry.path)) {
+        imageQueue.splice(i,1); encounterImages.delete(entry.path);
+      }
+    }
+    for (const path of preloadTargets) sceneImage(path);
+  }
+  function preloadEncounter(defs) {
+    for (const def of defs) sceneImage(encounterArt(def), true);
+    sceneImage(chestArt(false)); sceneImage(chestArt(true));
   }
   function encounterCaption(scene) {
     const { def, count, options } = scene;
@@ -488,85 +372,58 @@ const Render = (() => {
     ctx.textAlign = "left";
     ctx.fillStyle = "#e7bc74";
     ctx.font = "10px Menlo, monospace";
-    const rank = def.id === "WARDEN8" ? "FLOOR WARDEN" : def.elite ? "NAMED ELITE" : "HOSTILE CONTACT";
-    ctx.fillText(`${rank}  /  ${count} REMAINING`, 20, 337, 520);
+    let heading, title;
+    if (scene.kind === "chest") {
+      heading = scene.opened ? "SPOILS RECOVERED / CONTINUE EXPLORING" : "TREASURE FOUND / APPROACH WITH CAUTION";
+      title = scene.opened ? "The chest is yours." : "A guarded treasure chest";
+    } else {
+      const rank = /^WARDEN/.test(def.id) ? "FLOOR WARDEN" : def.boss ? "DUNGEON BOSS" : def.elite ? "NAMED ELITE" : "HOSTILE CONTACT";
+      heading = `${rank}  /  ${count} REMAINING`; title = def.name;
+    }
+    ctx.fillText(heading,20,337,520);
     ctx.fillStyle = "#fff2da";
     ctx.font = "23px Georgia, serif";
-    ctx.fillText(def.name, 20, 370, 520);
+    ctx.fillText(title,20,370,520);
     if (options.intent) {
       ctx.fillStyle = "#321611f2";
-      ctx.fillRect(12, 268, 536, 36);
-      ctx.strokeStyle = "#e49370";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(12, 268, 536, 36);
-      ctx.fillStyle = "#ffd8b0";
-      ctx.font = "13px Menlo, monospace";
-      ctx.fillText("! " + options.intent, 24, 291, 510);
+      ctx.fillRect(12,268,536,36);
+      ctx.strokeStyle = "#e49370";ctx.lineWidth=1;
+      ctx.strokeRect(12,268,536,36);
+      ctx.fillStyle = "#ffd8b0";ctx.font="13px Menlo, monospace";
+      ctx.fillText("! "+options.intent,24,291,510);
     }
   }
   function paintEncounter(image, scene) {
-    // Center-crop to fill the existing viewport without stretching anatomy.
     const ratio = 560 / 392;
-    const sw = Math.min(image.naturalWidth, image.naturalHeight * ratio);
-    const sh = sw / ratio;
-    ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, 0, 0, 560, 392);
+    const sw = Math.min(image.naturalWidth,image.naturalHeight*ratio), sh=sw/ratio;
+    ctx.drawImage(image,(image.naturalWidth-sw)/2,(image.naturalHeight-sh)/2,sw,sh,0,0,560,392);
     encounterCaption(scene);
   }
-  function monsterBox(def, count, options = {}) {
-    if (!ctx) init();
-    const path = encounterArt(def, options.floor);
-    const scene = { def, count, options, path };
-    activeEncounter = scene;
-    activeMaze = null;
-    document.getElementById("view").ariaLabel = `${def.name}, ${count} remaining${options.intent ? ", " + options.intent : ""}`;
-    if (path && typeof Image !== "undefined") {
-      let entry = encounterImages.get(path);
-      if (!entry) {
-        entry = { image: new Image(), loaded: false };
-        encounterImages.set(path, entry);
-        entry.image.onload = () => {
-          entry.loaded = true;
-          // A late download must never paint over a map, town, chest, or
-          // different monster. Read the latest count and warning on arrival.
-          if (activeEncounter && activeEncounter.path === path) paintEncounter(entry.image, activeEncounter);
-        };
-        entry.image.onerror = () => { entry.loaded = false; };
-        entry.image.src = path;
-      }
-      if (entry.loaded) { paintEncounter(entry.image, scene); return; }
-    }
-    pixelMonster(def, count);
+  function pendingScene(scene, failed) {
+    // Never flash a pixel portrait, another creature, or the previous screen.
+    ctx.fillStyle="#101813";ctx.fillRect(0,0,560,392);
+    ctx.fillStyle="#e7bc74";ctx.fillRect(250,157,60,2);
+    ctx.textAlign="center";ctx.fillStyle="#b6c2b4";ctx.font="14px Georgia, serif";
+    ctx.fillText(scene.kind === "chest" ? "Something worth finding." : "Something moves in the dark.",280,195);
+    ctx.fillStyle="#95a394";ctx.font="11px Menlo, monospace";
+    ctx.fillText(failed ? "Illustration unavailable. You can keep playing." : "Loading illustration…",280,221);
     encounterCaption(scene);
   }
-  function pixelMonster(def, count) {
+  function showScene(scene) {
     if (!ctx) init();
-    const bx = 160, by = 34, bw = 240, bh = 252;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = "#4a8a4a"; ctx.lineWidth = 2;
-    ctx.strokeRect(bx, by, bw, bh);
-    ctx.strokeRect(bx + 5, by + 5, bw - 10, bh - 10);
-    const rows = SPRITES[def.art] || SPRITES.humanoid;
-    const h = mhash(def.id);
-    const flip = (def.art === "beast" || def.art === "drake") && h % 2 === 1;
-    const accent = SPRITE_ACCENTS[h % SPRITE_ACCENTS.length];
-    const W = rows[0].length, H = rows.length;
-    const psz = Math.floor(Math.min((bw - 30) / W, (bh - 64) / H));
-    const ox = bx + Math.floor((bw - W * psz) / 2);
-    const oy = by + 12 + Math.floor(((bh - 58) - H * psz) / 2);
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const c = rows[y][flip ? W - 1 - x : x];
-        if (c === ".") continue;
-        ctx.fillStyle = c === "r" ? accent : SPRITE_PAL[c];
-        ctx.fillRect(ox + x * psz, oy + y * psz, psz, psz);
-      }
-    }
-    ctx.fillStyle = "#9fdf9f";
-    ctx.font = "13px Menlo, monospace";
-    ctx.textAlign = "center";
-    const label = `${def.name}${count > 1 ? "  x" + count : ""}`.toUpperCase();
-    ctx.fillText(label.length > 30 ? label.slice(0, 29) + "\u2026" : label, bx + bw / 2, by + bh - 14);
+    activeEncounter=scene;activeMaze=null;
+    document.getElementById("view").ariaLabel=scene.kind === "chest"
+      ? (scene.opened ? "Opened treasure chest; loot recovered" : "Closed treasure chest; contents unknown")
+      : `${scene.def.name}, ${scene.count} remaining${scene.options.intent ? ", "+scene.options.intent : ""}`;
+    const entry=sceneImage(scene.path,true);
+    if (entry && entry.status === "ready") paintEncounter(entry.image,scene);
+    else pendingScene(scene,entry && entry.status === "failed");
   }
-  return { draw, blank, drawMap, monsterBox, encounterArt };
+  function monsterBox(def,count,options={}) {
+    showScene({kind:"monster",def,count,options,path:encounterArt(def)});
+  }
+  function chestBox(opened=false) {
+    showScene({kind:"chest",opened,options:{},path:chestArt(opened)});
+  }
+  return { draw, blank, drawMap, monsterBox, encounterArt, chestBox, preloadFloor, preloadEncounter };
 })();

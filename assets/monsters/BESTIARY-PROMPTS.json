@@ -1,0 +1,154 @@
+{
+  "tool": "Built-in image generation",
+  "style": "Use case: stylized-concept. Asset type: full-scene landscape 3:2 illustrated encounter for a dark fantasy browser dungeon crawler. Polished painterly naturalistic game key art, textured believable materials, cinematic chiaroscuro, readable menacing creature silhouette and face. Single central subject approaching viewer, low eye-level camera. Essential face and hands in central 65%, upper 12% and lower 20% dark and clear of essential anatomy for game captions. Background: shadowy ancient dungeon masonry, ambiguous dark recesses suitable for different dungeon biomes, muted moss-green and charcoal shadows with warm amber torch rim light. No text, no UI, no border, no logo, no watermark, no pixel art, no graphic gore. ",
+  "assets": [
+    {
+      "file": "slime.jpg",
+      "subject": "A translucent green BUBBLY SLIME, a low gelatinous mound full of trapped bubbles, dissolved coins and a half-visible rusty helmet, glistening surface, unsettling rippling pseudopods."
+    },
+    {
+      "file": "kobold.jpg",
+      "subject": "A small wiry KOBOLD, reptilian goblin-like dungeon scavenger with pointed snout, tiny horns, sharp teeth and clever yellow eyes, mismatched leather armor, crude spear, stolen oversized belt."
+    },
+    {
+      "file": "giant-rat.jpg",
+      "subject": "A GIANT RAT the size of a boar, recognizably a rat with long naked tail, round ears, incisors, coarse wet brown fur and whiskers, hunched over damp stones, threatening low camera."
+    },
+    {
+      "file": "orc.jpg",
+      "subject": "A brutal ORC soldier, olive-gray skin, blunt tusks and heavy brow, battered iron armor, notched sword, leather straps and tired hateful eyes."
+    },
+    {
+      "file": "rogue.jpg",
+      "subject": "A human dungeon ROGUE and marauder, lean hooded ambusher in patched dark leather, scarred face under hood, curved dagger and small crossbow, pragmatic criminal menace."
+    },
+    {
+      "file": "skeleton.jpg",
+      "subject": "An animated human SKELETON warrior, bare yellowed bones clearly visible, rusty short sword and cracked wooden shield, fragments of old chain mail hanging from ribs, eerie eye sockets."
+    },
+    {
+      "file": "zombie.jpg",
+      "subject": "A hulking ZOMBIE, gray desiccated undead human with sagging ragged burial clothing, clouded eyes, stiff reaching hands, deathly pallor, no open wounds or gore."
+    },
+    {
+      "file": "crud.jpg",
+      "subject": "CREEPING CRUD, a crawling low mass of filthy amber-brown fungal ooze and matted roots, poisonous spores rising from crusted lumps, damp reflective surface, disgusting but no gore."
+    },
+    {
+      "file": "mage.jpg",
+      "subject": "A hostile dungeon MAGE, gaunt adult sorcerer in layered weathered robes, sinister face beneath cowl, one hand weaving orange fire and the other holding a carved staff, readable hands."
+    },
+    {
+      "file": "priest.jpg",
+      "subject": "A dark dungeon PRIEST and cultist, imposing adult zealot in decayed ceremonial robes with tarnished bronze ornaments, stern face, heavy mace and unholy pendant, faint cold ritual light."
+    },
+    {
+      "file": "spider.jpg",
+      "subject": "A HUGE SPIDER, black widow-like arachnid with exactly eight long jointed legs, swollen glossy abdomen with subtle dark red marking, cluster of shining eyes and visible fangs, webs at edges."
+    },
+    {
+      "file": "samurai.jpg",
+      "subject": "An undead-looking but living hostile SAMURAI, scarred stern adult warrior in worn lacquered lamellar armor, battered hornless kabuto helmet, katana in two-handed ready stance, faded crimson cords."
+    },
+    {
+      "file": "gargoyle.jpg",
+      "subject": "A living stone GARGOYLE, crouched muscular winged humanoid demon carved from weathered gray rock, cracks and moss, folded bat-like stone wings, claws and snarling face, distinctly masonry brought to life."
+    },
+    {
+      "file": "dragon-fly.jpg",
+      "subject": "A monstrous DRAGON FLY, recognizably a giant six-legged dragonfly insect with four translucent veined wings and long segmented abdomen, reptilian mandibles subtly glowing with inner fire, hovering just above dungeon floor."
+    },
+    {
+      "file": "beetle.jpg",
+      "subject": "A BORING BEETLE the size of a pony, massive armored brown-black beetle with six legs, powerful drill-like mandibles, scratched hard wing cases, compact heavy insect silhouette."
+    },
+    {
+      "file": "werewolf.jpg",
+      "subject": "A WEREWOLF, tall bipedal muscular wolf-human monster, gray-black fur, long clawed humanoid hands, wolf muzzle bared in snarl, torn human trousers, dramatically different from a four-legged hound."
+    },
+    {
+      "file": "shade.jpg",
+      "subject": "A SHADE, incorporeal humanoid ghost made of charcoal mist, faint pale face emerging from translucent torn shroud, elongated spectral hands, cold silver eyes, floor visible through its dissolving lower body."
+    },
+    {
+      "file": "apprentice.jpg",
+      "subject": "WERDNA'S APPRENTICE, a bespoke campaign boss: arrogant adult young wizard in elaborate worn black and antique-gold robes, sharp human face and unruly dark hair, holding an ominous amulet and a blazing fire spell, ancient lectern and arcane books behind him, distinctive powerful magical rival."
+    },
+    {
+      "file": "troll.jpg",
+      "subject": "A massive TROLL, long-armed hunched humanoid with mossy gray-green leathery skin, huge hooked nose and snaggle teeth, wiry hair and crude loincloth, dragging a gnarled root club, sinewy rather than ogre-like."
+    },
+    {
+      "file": "minotaur.jpg",
+      "subject": "A MINOTAUR, huge bull-headed humanoid with curved bovine horns, black fur, thick muscular arms, scarred bronze breastplate and enormous chipped two-handed axe, hooves on stone."
+    },
+    {
+      "file": "golem.jpg",
+      "subject": "An ancient stone GOLEM, artificial humanoid built from huge fitted granite blocks with worn carved runes, square head and massive slab fists, dust pouring from joints, small amber light in eye slots."
+    },
+    {
+      "file": "stalker.jpg",
+      "subject": "A dungeon STALKER, emaciated lanky predatory beast with elongated clawed forelimbs and hunched bipedal posture, hairless dark leathery hide, narrow angular skull and luminous eyes, crouching from the darkness."
+    },
+    {
+      "file": "ghoul.jpg",
+      "subject": "A GHOUL, gaunt predatory undead humanoid, corpse-gray leathery skin, long sinewy arms and clawed fingers, hollow cheeks and crooked teeth, torn burial rags, hunched prowling posture. No metal armor; this is the ordinary ghoul, distinct from the iron-armored variant."
+    },
+    {
+      "file": "drake.jpg",
+      "subject": "A fire DRAKE, squat powerful dragon with four scaled legs, small folded wings, armored horned head, charcoal and bronze scales, faint amber glow deep in its throat, looming close."
+    },
+    {
+      "file": "salamander.jpg",
+      "subject": "A monstrous fire SALAMANDER, huge recognizably amphibian lizard-like creature with four short splayed legs, smooth coal-black skin with ember-orange patches, long curling tail, moist reflective skin, low to ground, no wings."
+    },
+    {
+      "file": "wyrm.jpg",
+      "subject": "A WYRM, huge serpentine wingless and legless dragon coiled in a stone dungeon, heavy dark scales, elongated horned head and amber eyes, long sinuous body fading into shadows, faint throat fire."
+    },
+    {
+      "file": "wight.jpg",
+      "subject": "A WIGHT, ancient withered undead noble in tattered heavy burial robes and tarnished circlet, gray leathery face, cold blue eyes, grasping hand and long rusted sword, regal but hollow."
+    },
+    {
+      "file": "revenant.jpg",
+      "subject": "A REVENANT, relentless undead human knight in battered chainmail and torn travel cloak, corpse-pale scarred face beneath damaged helmet, large worn longsword held low, cold determination and haunting eyes."
+    },
+    {
+      "file": "bone-knight.jpg",
+      "subject": "A BONE KNIGHT, formidable skeletal knight in armor constructed from layered pale bone plates with dark iron fastenings, skull-faced visor, rib-shaped breastplate, bone-edged greatsword, solemn martial posture."
+    },
+    {
+      "file": "needle-wasp.jpg",
+      "subject": "A giant NEEDLE WASP, recognizably six-legged predatory wasp with narrow waist, striped black and tarnished-yellow chitin, translucent wings and long needle stinger, hovering aggressively inside dark stone dungeon."
+    },
+    {
+      "file": "warden13.jpg",
+      "subject": "THE MAGISTRATE BELOW, bespoke drowned-court boss: towering undead judge with waterlogged pale face, tarnished judicial crown, sodden black ceremonial robes, barnacles on shoulders, massive gavel and chained law book. Background override: flooded gothic courtroom, ankle-deep black water, submerged benches, cold teal light with amber highlights. Regal grotesque bureaucratic menace."
+    },
+    {
+      "file": "warden18.jpg",
+      "subject": "THE GRAND OSSUARY, bespoke boss: a walking reliquary shaped like a hulking cathedral made of thousands of ancient bones, ribcage arches, skull windows, massive femur legs, central skull-faced shrine. Background override: vast ossuary crypt with neatly stacked bones, ivory and charcoal palette, restrained warm candlelight. Monumental creature, no gore."
+    },
+    {
+      "file": "warden23.jpg",
+      "subject": "SLAGMAW, bespoke boss: enormous furnace drake, molten-gold encrusted dragon with cracked black volcanic scales, heavy golden jaws and blazing throat, scattered coins welded into its hide. Background override: industrial subterranean furnace chamber, cooling slag and red embers. Gold and charcoal, majestic greedy menace."
+    },
+    {
+      "file": "warden28.jpg",
+      "subject": "THE REDACTED, bespoke boss: a tall spectral librarian whose robed body is partly erased into floating dark rectangular voids and drifting ash, one cold luminous eye and a pale skeletal hand holding a chained blank book. Background override: towering silent ancient library, violet-gray shadows, candlelight. Powerful uncanny presence; no letters or readable text anywhere."
+    },
+    {
+      "file": "warden33.jpg",
+      "subject": "THE CUSTODIAN, bespoke final-band boss: colossal ancient maintenance engine, humanoid construct of tarnished brass, black iron, interlocking stone plates and thick cables, gigantic claw-like repair tools for hands, furnace eyes in an impassive mask. Background override: deep cavern where rock resembles living roots, muted red glow, heavy industrial darkness. The mechanism that maintains the bottom of the world."
+    },
+    {
+      "file": "chest-closed.jpg",
+      "subject": "A CLOSED TREASURE CHEST, no creature or person. Heavy ancient oak chest with ornate corroded iron bands, securely closed lid, large mysterious brass lock, worn carved corners. Chest centered in lower-middle of an atmospheric dungeon alcove, warm torchlight grazes wood grain. Do not reveal contents or any trap mechanism; the chest is uninspected."
+    },
+    {
+      "file": "chest-open.jpg",
+      "subject": "An OPEN TREASURE CHEST, no creature or person. Heavy ancient oak chest with ornate corroded iron bands and brass lock, lid fully raised, warmly glowing gold coins and a few small gems visible within. Centered in atmospheric dungeon alcove, warm amber torchlight. No modern objects, no typography, no visible trap."
+    }
+  ]
+}

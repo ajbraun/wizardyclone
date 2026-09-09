@@ -68,8 +68,11 @@ The Warrens (floors 4–8) now has illustrated encounters for hounds, scorpions,
 and ogres, including their named elite variants, plus bespoke art for its Warden,
 Mother of Thousands. Iron Ghouls also have a dedicated illustration at every depth,
 including named elite variants. Scenes fill the viewport and show the surviving group count
-and any announced attack. Other species keep their original portraits; those also
-serve as the fallback while images load or if an image fails to load.
+and any announced attack. Every campaign and generated monster now resolves to an
+illustrated encounter scene. A neutral loading card appears while an image is
+fetched, and remains if the request fails, so an earlier portrait never flashes
+into a new fight. Some rare creature families currently share a closely matched
+archetype scene; their mechanics and names remain distinct.
 
 Open `test/encounter-preview.html` to view the five scenes without touching a save.
 Assets and their generation prompts are in `assets/monsters/`. Images are fetched

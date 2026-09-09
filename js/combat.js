@@ -84,6 +84,7 @@ const Combat = {
       if (r < 15) { this.surprising = true; UI.log("You surprise them!"); }
       else if (r < 25) { this.surprised = true; UI.log("You are surprised!"); }
     }
+    Render.preloadEncounter(this.groups.map(g => g.def));
     Game.go(CombatScreen);
     if (this.surprised) { this.actions = []; this.resolveRound(); }
     else this.beginInput();
@@ -163,7 +164,9 @@ const Combat = {
     const m = Game.maze;
     Render.draw(getLevel(m.level), m.x, m.y, m.f, 3);
     UI.viewLabel("*** COMBAT ***");
-    if (this.phase !== "chest") {
+    if (this.phase === "chest" || (this.phase === "msg" && this.endTo === "chest")) {
+      Render.chestBox(false);
+    } else {
       const fg = (this.sub === "card" && this.inspectG) ? this.inspectG : this.aliveGroups()[0];
       if (fg) Render.monsterBox(fg.def, this.aliveIn(fg).length, {
         floor: m.level,
@@ -671,6 +674,7 @@ const Combat = {
   drawChest() {
     const ch = Game.party[this.worker];
     UI.viewLabel("*** A CHEST ***");
+    Render.chestBox(false);
     const rev = this.chest.revealed ? `\nInspection says: <span class="k">${this.chest.revealed}</span>` : "";
     UI.panel(`<h2>A CHEST!</h2>\nWorking on it: <span class="hi">${esc(ch ? ch.name : "?")}</span> <span class="dim">(press 1-${Game.party.length} to change)</span>${rev}\n\n${UI.key("O", "Open it")}\n${UI.key("I", "Inspect for traps")}\n${UI.key("C", "Cast CALFO")}\n${UI.key("D", "Disarm trap")}\n${UI.key("L", "Leave it")}`);
   },
@@ -767,6 +771,10 @@ const Combat = {
     Events.emit("loot", { ch, gold, item: itemName, level: Game.maze.level });
     UI.renderParty();
     this.finish();
+    // Keep the normal maze controls and save timing; display recovered loot
+    // until the next exploration action redraws the maze.
+    Render.chestBox(true);
+    UI.viewLabel("TREASURE RECOVERED");
   },
 };
 

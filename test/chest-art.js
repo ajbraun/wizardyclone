@@ -1,0 +1,26 @@
+"use strict";
+const {boot,makeChecker}=require("./harness");
+const c=makeChecker("chest-art"),g=boot();
+g.press("n");
+g.run(`
+  var ch=newChar("CHEST TEST","Human","Good",{STR:12,IQ:10,PIE:10,VIT:12,AGI:12,LUK:10},"Fighter");
+  Game.roster.push(ch);Game.party.push(ch);
+  Game.maze={level:1,x:9,y:18,f:0,light:0};
+  Combat.groups=[];Combat.opts={};Combat.worker=0;
+  Combat.chest={trap:"POISON NEEDLE",revealed:null,done:false};
+  Combat.phase="chest";Game.go(CombatScreen);
+`);
+c.assert(g.els.view.ariaLabel==="Closed treasure chest; contents unknown","chest controls display a closed chest");
+c.assert(!g.els.panel.innerHTML.includes("POISON NEEDLE"),"illustration does not reveal a hidden trap");
+c.assert(g.get('Combat.chest.trap')==="POISON NEEDLE","drawing leaves the trap untouched");
+g.run('Combat.chest.trap=null; var oldGold=ch.gold; Combat.chestKey("o")');
+c.assert(g.get('Game.state===MazeScreen && Combat.chest.done'),"opening still returns to normal maze controls");
+c.assert(g.els.view.ariaLabel==="Opened treasure chest; loot recovered","opening shows recovered treasure");
+c.assert(g.get('ch.gold>oldGold'),"normal gold award is preserved");
+c.assert(JSON.parse(g.store.wizardy_save_v2).roster[0].gold===g.get('ch.gold'),"loot is saved before showing the open chest");
+g.press("a");
+c.assert(g.els.view.ariaLabel==="First-person dungeon view","next movement restores the maze");
+g.run('Combat.chest={trap:null,revealed:null,done:false};Combat.phase="chest";Game.go(CombatScreen);var beforeLeave=ch.gold;Combat.chestKey("l")');
+c.assert(g.get('ch.gold===beforeLeave && Game.state===MazeScreen'),"leaving a chest grants nothing and returns to maze");
+c.assert(g.els.view.ariaLabel==="First-person dungeon view","leaving does not show opened treasure");
+c.done();

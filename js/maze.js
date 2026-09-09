@@ -36,6 +36,7 @@ const MazeScreen = {
   draw() {
     const m = Game.maze;
     const map = getLevel(m.level);
+    Render.preloadFloor(map, m.level);
     markSeen(m.level, m.x, m.y);
     Render.draw(map, m.x, m.y, m.f, m.light > 0 ? 4 : 3);
     const st = streakCount();
@@ -215,6 +216,7 @@ const MazeScreen = {
     m.x += DIRS[m.f].dx;
     m.y += DIRS[m.f].dy;
     if (m.light > 0) m.light--;
+    Render.preloadFloor(map, m.level);
     markSeen(m.level, m.x, m.y);
     Events.emit("step", { level: m.level, x: m.x, y: m.y });
     for (const ch of Game.party) {

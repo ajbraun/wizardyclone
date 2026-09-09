@@ -7,3 +7,5 @@ wrangler.jsonc
 
 assets/monsters/*.md
 assets/environment/*.md
+assets/monsters/*.png
+assets/monsters/*.json
