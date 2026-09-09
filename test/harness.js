@@ -10,7 +10,7 @@ const FILES = ["util.js", "events.js", "data.js", "loot.js", "maps.js", "gen.js"
 function boot(opts) {
   opts = opts || {};
   const noop = () => {};
-  const ctx2d = new Proxy({}, { get: (t, p) => (p === "canvas" ? {} : noop), set: () => true });
+  const ctx2d = opts.context2d || new Proxy({}, { get: (t, p) => (p === "canvas" ? {} : noop), set: () => true });
   const els = {};
   const listeners = { document: {}, window: {} };
   const store = opts.store || {};
@@ -27,6 +27,7 @@ function boot(opts) {
       removeItem: k => { delete store[k]; },
     },
   };
+  if (opts.Image) sandbox.Image = opts.Image;
   vm.createContext(sandbox);
   const files = opts.files || FILES;
   for (const f of files) vm.runInContext(fs.readFileSync(path.join(ROOT, "js", f), "utf8"), sandbox, { filename: f });

@@ -2,6 +2,12 @@
 const Render = (() => {
   const CX = 280, CY = 196, KX = 270, KY = 190;
   let ctx = null;
+  const encounterImages = new Map();
+  let activeEncounter = null;
+  function clearEncounter(label) {
+    activeEncounter = null;
+    document.getElementById("view").ariaLabel = label;
+  }
   function init() { ctx = document.getElementById("view").getContext("2d"); }
   function px(x, t) { return CX + (x * KX) / t; }
   function py(y, t) { return CY + (y * KY) / t; }
@@ -39,6 +45,7 @@ const Render = (() => {
     }
   }
   function draw(map, x, y, dir, maxDepth) {
+    clearEncounter("First-person dungeon view");
     if (!ctx) init();
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, 560, 392);
@@ -70,6 +77,7 @@ const Render = (() => {
     }
   }
   function blank(text) {
+    clearEncounter(text || "Dungeon gate");
     if (!ctx) init();
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, 560, 392);
@@ -113,6 +121,7 @@ const Render = (() => {
 
   // automap: draw only cells the party has visited
   function drawMap(map, seen, px0, py0, pf) {
+    clearEncounter("Automap of visited dungeon cells");
     if (!ctx) init();
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, 560, 392);
@@ -356,7 +365,76 @@ const Render = (() => {
   const SPRITE_PAL = { o: "#d8ffd8", g: "#7fbf7f", d: "#396639", k: "#091409", y: "#ffd700" };
   const SPRITE_ACCENTS = ["#ff5555", "#ffd700", "#e8ffe8"]; // per-species eye color
   function mhash(s) { let h = 7; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
-  function monsterBox(def, count) {
+  // Match species, including an elite's original species, without changing
+  // generated definitions or consuming RNG (existing saves keep their floors).
+  function encounterArt(def, floor) {
+    if (def.id === "WARDEN8") return "assets/monsters/mother-of-thousands.png";
+    if (floor < 4 || floor > 8 || !Number.isFinite(floor)) return null;
+    const species = def.base || def.name || "";
+    for (const name of ["hound", "scorpion", "ogre"]) {
+      if (new RegExp("\\b" + name + "\\b", "i").test(species)) {
+        return "assets/monsters/warrens-" + name + ".png";
+      }
+    }
+    return null;
+  }
+  function encounterCaption(scene) {
+    const { def, count, options } = scene;
+    ctx.fillStyle = "#09100dec";
+    ctx.fillRect(0, 316, 560, 76);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#e7bc74";
+    ctx.font = "10px Menlo, monospace";
+    const rank = def.id === "WARDEN8" ? "FLOOR WARDEN" : def.elite ? "NAMED ELITE" : "HOSTILE CONTACT";
+    ctx.fillText(`${rank}  /  ${count} REMAINING`, 20, 337, 520);
+    ctx.fillStyle = "#fff2da";
+    ctx.font = "23px Georgia, serif";
+    ctx.fillText(def.name, 20, 370, 520);
+    if (options.intent) {
+      ctx.fillStyle = "#321611f2";
+      ctx.fillRect(12, 268, 536, 36);
+      ctx.strokeStyle = "#e49370";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(12, 268, 536, 36);
+      ctx.fillStyle = "#ffd8b0";
+      ctx.font = "13px Menlo, monospace";
+      ctx.fillText("! " + options.intent, 24, 291, 510);
+    }
+  }
+  function paintEncounter(image, scene) {
+    // Center-crop to fill the existing viewport without stretching anatomy.
+    const ratio = 560 / 392;
+    const sw = Math.min(image.naturalWidth, image.naturalHeight * ratio);
+    const sh = sw / ratio;
+    ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, 0, 0, 560, 392);
+    encounterCaption(scene);
+  }
+  function monsterBox(def, count, options = {}) {
+    if (!ctx) init();
+    const path = encounterArt(def, options.floor);
+    const scene = { def, count, options, path };
+    activeEncounter = scene;
+    document.getElementById("view").ariaLabel = `${def.name}, ${count} remaining${options.intent ? ", " + options.intent : ""}`;
+    if (path && typeof Image !== "undefined") {
+      let entry = encounterImages.get(path);
+      if (!entry) {
+        entry = { image: new Image(), loaded: false };
+        encounterImages.set(path, entry);
+        entry.image.onload = () => {
+          entry.loaded = true;
+          // A late download must never paint over a map, town, chest, or
+          // different monster. Read the latest count and warning on arrival.
+          if (activeEncounter && activeEncounter.path === path) paintEncounter(entry.image, activeEncounter);
+        };
+        entry.image.onerror = () => { entry.loaded = false; };
+        entry.image.src = path;
+      }
+      if (entry.loaded) { paintEncounter(entry.image, scene); return; }
+    }
+    pixelMonster(def, count);
+    encounterCaption(scene);
+  }
+  function pixelMonster(def, count) {
     if (!ctx) init();
     const bx = 160, by = 34, bw = 240, bh = 252;
     ctx.fillStyle = "#000";
@@ -386,5 +464,5 @@ const Render = (() => {
     const label = `${def.name}${count > 1 ? "  x" + count : ""}`.toUpperCase();
     ctx.fillText(label.length > 30 ? label.slice(0, 29) + "\u2026" : label, bx + bw / 2, by + bh - 14);
   }
-  return { draw, blank, drawMap, monsterBox };
+  return { draw, blank, drawMap, monsterBox, encounterArt };
 })();

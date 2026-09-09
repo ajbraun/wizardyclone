@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="../">
+<title>Warrens — Encounter Art Preview</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="game">
+<header class="masthead"><div><span class="eyebrow">BESTIARY / THE WARRENS</span><h1>HOSTILE CONTACT</h1></div></header>
+<div id="top">
+<div id="viewwrap"><canvas id="view" width="560" height="392" aria-label="Encounter artwork"></canvas></div>
+<section id="panel" aria-label="Preview controls" style="white-space:normal">
+<h2>MEET THE LOCALS</h2>
+<p class="dim">Illustrated encounters for floors 4–8. Select a creature to preview its artwork using the game's renderer. This page never accesses your save.</p>
+<div id="choices" style="margin:20px 0"></div>
+<label><input id="warning" type="checkbox"> Preview attack warning</label>
+<p class="dim" style="margin-top:20px">The original portrait appears while the illustration downloads. In combat, the caption shows the actual surviving group count and announced attack.</p>
+</section>
+</div>
+</main>
+<script src="js/render.js"></script>
+<script>
+const creatures = [
+  {id:"WARDEN8", name:"Mother of Thousands", art:"bug", elite:true},
+  {id:"PREVIEW_HOUND", name:"Dire Hound", art:"beast"},
+  {id:"PREVIEW_SCORPION", name:"Venomous Scorpion", art:"bug"},
+  {id:"PREVIEW_OGRE", name:"Iron Ogre", art:"brute"},
+];
+let selected = 0;
+function preview() {
+  Render.blank("");
+  Render.monsterBox(creatures[selected], selected ? 2 : 1, {floor:8, intent:document.getElementById("warning").checked ? "ATTACK WARNING PREVIEW" : ""});
+  for (const [i, button] of [...document.querySelectorAll("#choices button")].entries()) button.setAttribute("aria-pressed", String(i === selected));
+}
+creatures.forEach((creature, i) => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "action";
+  button.style.display = "flex";
+  button.textContent = creature.name;
+  button.onclick = () => { selected = i; preview(); };
+  document.getElementById("choices").appendChild(button);
+});
+document.getElementById("warning").onchange = preview;
+preview();
+</script>
+</body>
+</html>

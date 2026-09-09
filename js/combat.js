@@ -165,7 +165,10 @@ const Combat = {
     UI.viewLabel("*** COMBAT ***");
     if (this.phase !== "chest") {
       const fg = (this.sub === "card" && this.inspectG) ? this.inspectG : this.aliveGroups()[0];
-      if (fg) Render.monsterBox(fg.def, this.aliveIn(fg).length);
+      if (fg) Render.monsterBox(fg.def, this.aliveIn(fg).length, {
+        floor: m.level,
+        intent: fg.intent && !fg.intentDone ? fg.intent.label : "",
+      });
     }
     if (this.phase === "msg") {
       UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n<span class="k">[ SPACE ]</span>`);
