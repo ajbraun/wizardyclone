@@ -34,6 +34,7 @@ function boot(opts) {
   const press = k => listeners.document.keydown({ key: k, metaKey: false, ctrlKey: false, altKey: false, preventDefault: noop });
   return {
     sandbox, els, store, press,
+    click: key => listeners.document.click({ target: { closest: () => ({ dataset: { key: String(key).toLowerCase() } }) } }),
     type: s => { for (const c of s) press(c); },
     get: expr => vm.runInContext("(" + expr + ")", sandbox),
     run: code => vm.runInContext(code, sandbox),

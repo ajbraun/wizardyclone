@@ -1,0 +1,18 @@
+"use strict";
+const { boot, makeChecker } = require("./harness");
+const c = makeChecker("interface");
+const g = boot();
+c.assert(g.els.panel.innerHTML.includes('data-key="n"'), "new game is clickable");
+g.click("n");
+c.assert(g.get("Game.state === CastleScreen"), "click starts game");
+g.click("e");
+c.assert(g.get("Game.state === EdgeScreen"), "click navigates castle");
+g.press("c");
+c.assert(g.get("Game.state === CastleScreen"), "keyboard still navigates after clicks");
+c.assert(g.get('UI.key(1, "Member")').includes('data-key="1"'), "numeric party choices work");
+g.run('Game.save(); Game.go(TitleScreen)');
+g.click("n");
+c.assert(g.get("Game.state === TitleScreen && TitleScreen.confirmed"), "click preserves overwrite confirmation");
+g.click("n");
+c.assert(g.get("Game.state === CastleScreen"), "second click confirms new game");
+c.done();

@@ -27,7 +27,7 @@ const UI = (() => {
     el.innerHTML = logLines.slice(-6).map(esc).join("<br>");
   }
   function clearLog() { logLines.length = 0; document.getElementById("log").innerHTML = ""; }
-  function key(k, label) { return `<span class="k">${k}</span>) ${label}`; }
+  function key(k, label) { return `<button type="button" class="action" data-key="${esc(String(k).toLowerCase())}"><span class="k">${esc(k)}</span><span>${label}</span></button>`; }
   function statusStr(ch) {
     if (ch.status === "OK") return ch.hp < maxHP(ch) / 4 ? '<span class="bad">OK</span>' : "OK";
     const cls = (ch.status === "DEAD" || ch.status === "ASHES") ? "bad" : "k";
@@ -36,11 +36,11 @@ const UI = (() => {
   function renderParty() {
     const rows = Game.party.map((ch, i) => {
       const spStr = spSummary(ch);
-      return `<tr><td>${i + 1}</td><td class="hi">${esc(ch.name)}</td><td>${ch.align[0]}-${esc(ch.cls)}</td><td>${ch.level}</td><td>${acOf(ch)}</td><td>${ch.hp}/${maxHP(ch)}</td><td>${spStr}</td><td>${statusStr(ch)}</td><td class="gold">${ch.gold}</td></tr>`;
+      return `<tr><td>${i + 1}</td><td class="hi">${esc(ch.name)}</td><td>${ch.align[0]}-${esc(ch.cls)}</td><td>${ch.level}</td><td>${acOf(ch)}</td><td><span class="health-value">${ch.hp}/${maxHP(ch)}</span><meter class="health" min="0" max="${maxHP(ch)}" value="${Math.max(0, ch.hp)}" low="${maxHP(ch) / 4}" optimum="${maxHP(ch)}" aria-label="${esc(ch.name)} health"></meter></td><td>${spStr}</td><td>${statusStr(ch)}</td><td class="gold">${ch.gold}</td></tr>`;
     }).join("");
     document.getElementById("party").innerHTML = Game.party.length
       ? `<table><tr><th>#</th><th>NAME</th><th>CLASS</th><th>LVL</th><th>AC</th><th>HITS</th><th>SP</th><th>STATUS</th><th>GOLD</th></tr>${rows}</table>`
-      : '<div class="dim" style="padding:4px">** NO PARTY — visit Gilgamesh\'s Tavern **</div>';
+      : '<div class="dim" style="padding:4px">Your party is waiting to happen. Create adventurers at the Training Grounds, then recruit them at Gilgamesh\'s Tavern.</div>';
   }
   function spSummary(ch) {
     const parts = [];

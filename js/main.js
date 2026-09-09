@@ -70,14 +70,9 @@ const TitleScreen = {
   draw() {
     Render.blank("");
     UI.viewLabel("");
-    const art =
-` __      __ ___ ______  _    ____  ____  __   __
- \\ \\    / /|_ _||_   /  / \\  |  _ \\|  _ \\ \\ \\ / /
-  \\ \\/\\/ /  | |   / /  / _ \\ | |_) | | | | \\ V /
-   \\_/\\_/  |___| /___|/_/ \\_\\|_| \\_\\|____/   |_|`;
-    UI.panel(`<div class="title-art">${art}</div>\n<span class="dim">   PROVING GROUNDS OF THE CODE OVERLORD</span>\n\n\n` +
-      (Game.hasSave() ? `${UI.key("C", "Continue")}\n` : "") +
-      `${UI.key("N", "New Game")}\n\n<span class="dim">A tribute to the 1981 classic. Make characters at the Training\nGrounds (Edge of Town), form a party at Gilgamesh's Tavern,\nand brave the maze. Find the Amulet on level 3 to win.</span>`);
+    UI.panel(`<div class="intro"><span class="eyebrow">A CLASSIC CRAWL. A CRUEL NEW SYSTEM.</span><h2>Enter the dungeon.<br>Entertain the System.</h2><p>Six adventurers. An endless descent. An all-seeing overlord with a deeply unhealthy interest in your survival.</p><div class="intro-actions">` +
+      (Game.hasSave() ? `${UI.key("C", "Continue your descent")}\n` : "") +
+      `${UI.key("N", "Begin a new game")}</div><div class="field-guide"><span class="eyebrow">YOUR FIRST EXPEDITION</span><ol><li>Create adventurers at the Training Grounds, beyond the Edge of Town.</li><li>Assemble your party at Gilgamesh’s Tavern.</li><li>Enter the maze. Find the Amulet on level 3. Discover what waits below.</li></ol></div><p class="system-note">“Your survival is optional. Your participation is appreciated.”<br><span class="dim">— The System</span></p></div>`);
   },
   key(k) {
     if (k === "c" && Game.hasSave()) {
@@ -100,8 +95,18 @@ const TitleScreen = {
   enter() { this.confirmed = false; },
 };
 
+// Route pointer actions through the same state handlers as keyboard commands.
+document.addEventListener("click", (e) => {
+  const button = e.target.closest("button[data-key]");
+  if (button && Game.state && Game.state.key) {
+    Game.state.key(button.dataset.key, e);
+  }
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  // Let native button activation handle Enter/Space once, via click.
+  if (e.target && e.target.closest("button") && ["Enter", " "].includes(e.key)) return;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
   if (Game.state && Game.state.key) Game.state.key(e.key.toLowerCase(), e);
 });

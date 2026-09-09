@@ -2,22 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101713">
 <title>WIZARDY — Proving Grounds of the Code Overlord</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="game">
+<main id="game">
+  <header class="masthead"><div><span class="eyebrow">THE SYSTEM PRESENTS</span><h1>WIZARDY<span> / </span></h1></div><div class="broadcast"><span class="live-dot"></span> CRAWLER FEED<br><span class="dim">Proving Grounds of the Code Overlord</span></div></header>
   <div id="top">
     <div id="viewwrap">
-      <canvas id="view" width="560" height="392"></canvas>
+      <canvas id="view" width="560" height="392" aria-label="Dungeon view and automap"></canvas>
       <div id="viewlabel"></div>
       <div id="toasts"></div>
     </div>
-    <div id="panel"></div>
+    <section id="panel" aria-label="Actions"></section>
   </div>
-  <div id="log"></div>
-  <div id="party"></div>
-</div>
+  <section class="feed"><div class="section-label"><span class="live-dot"></span> SYSTEM TRANSMISSION <span class="dim"> / EVENT LOG</span></div><div id="log" role="log" aria-live="polite"></div></section>
+  <section class="party-section"><div class="section-label">YOUR PARTY <span class="dim"> / SIX SLOTS. QUESTIONABLE ODDS.</span></div><div id="party"></div></section>
+  <footer><span><kbd>W A S D</kbd> Move & turn <kbd>M</kbd> Map <kbd>C</kbd> Camp</span><span>Click highlighted actions · Keyboard always welcome</span></footer>
+</main>
 <script src="js/util.js"></script>
 <script src="js/events.js"></script>
 <script src="js/data.js"></script>

@@ -48,8 +48,11 @@ no dependencies. Saves live in your browser's localStorage.
 
 ## Controls
 
-Keyboard-driven, like the ancients intended. Arrows/WASD to move, highlighted
-letters for menus, `M` map, `C` camp, `S` the System (in castle or camp).
+Click highlighted menu actions or use their keyboard shortcuts. Arrows/WASD to move, `M` map, `C` camp, `S` the System (in castle or camp).
+
+The interface adapts to narrow screens, with readable party health meters and a
+System broadcast log. Character naming and some detailed selections still use
+the keyboard.
 
 ## Development
 

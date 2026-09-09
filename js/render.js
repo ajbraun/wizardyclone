@@ -73,17 +73,44 @@ const Render = (() => {
     if (!ctx) init();
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, 560, 392);
-    if (text) {
-      ctx.strokeStyle = "#4a8a4a";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(40, 40, 480, 312);
-      ctx.strokeRect(48, 48, 464, 296);
-      ctx.fillStyle = "#9fdf9f";
-      ctx.font = "28px Menlo, monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(text, 280, 205);
+    // A quiet, geometric gate into the dungeon. Canvas-native, no asset downloads.
+    ctx.fillStyle = "#0c140f";
+    ctx.fillRect(0, 0, 560, 392);
+    for (let i = 0; i < 7; i++) {
+      const inset = 28 + i * 27;
+      const top = 32 + i * 14;
+      ctx.fillStyle = i % 2 ? "#152219" : "#1b2b20";
+      ctx.fillRect(inset, top, 560 - inset * 2, 392 - top);
+      ctx.strokeStyle = "#344b36";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(inset, top, 560 - inset * 2, 392 - top);
     }
+    ctx.fillStyle = "#060c08";
+    ctx.fillRect(217, 144, 126, 248);
+    ctx.strokeStyle = "#5e7651";
+    ctx.strokeRect(217, 144, 126, 248);
+    // A descending stair disappearing into the doorway.
+    for (let i = 0; i < 8; i++) {
+      const y = 292 + i * i * 2;
+      ctx.strokeStyle = "#314632";
+      ctx.beginPath(); ctx.moveTo(217, y); ctx.lineTo(343, y); ctx.stroke();
+    }
+    for (const x of [157, 397]) {
+      ctx.fillStyle = "#635234"; ctx.fillRect(x, 206, 6, 37);
+      ctx.fillStyle = "#ad8548"; ctx.fillRect(x - 3, 194, 12, 17);
+      ctx.fillStyle = "#efd59a"; ctx.fillRect(x, 190, 6, 15);
+    }
+    ctx.fillStyle = "#0a110dee";
+    ctx.fillRect(0, 0, 560, 72);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#e0d5b9";
+    ctx.font = "20px Georgia, serif";
+    ctx.fillText(text || "THE DESCENT AWAITS", 280, 39);
+    ctx.fillStyle = "#a1b29a";
+    ctx.font = "10px Menlo, monospace";
+    ctx.fillText("ABANDON CERTAINTY. BRING A PARTY.", 280, 59);
   }
+
   // automap: draw only cells the party has visited
   function drawMap(map, seen, px0, py0, pf) {
     if (!ctx) init();
