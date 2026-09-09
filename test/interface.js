@@ -15,4 +15,5 @@ g.click("n");
 c.assert(g.get("Game.state === TitleScreen && TitleScreen.confirmed"), "click preserves overwrite confirmation");
 g.click("n");
 c.assert(g.get("Game.state === CastleScreen"), "second click confirms new game");
+c.assert(require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8").includes('data-key="arrowup"'), "mobile movement controls are present");
 c.done();

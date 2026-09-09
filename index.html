@@ -15,6 +15,11 @@
       <canvas id="view" width="560" height="392" aria-label="Dungeon view and automap"></canvas>
       <div id="viewlabel"></div>
       <div id="toasts"></div>
+      <nav id="touch-controls" aria-label="Touch controls">
+        <div class="touch-row"><button type="button" class="touch-button touch-turn" data-key="arrowleft" aria-label="Turn left">↶</button><button type="button" class="touch-button touch-forward" data-key="arrowup" aria-label="Move forward">▲</button><button type="button" class="touch-button touch-turn" data-key="arrowright" aria-label="Turn right">↷</button></div>
+        <div class="touch-row"><button type="button" class="touch-button touch-wide" data-key="arrowdown">▼ Back</button><button type="button" class="touch-button touch-wide" data-key="enter">Interact</button></div>
+        <div class="touch-row touch-utility"><button type="button" class="touch-button" data-key="m">Map</button><button type="button" class="touch-button" data-key="c">Camp</button></div>
+      </nav>
     </div>
     <section id="panel" aria-label="Actions"></section>
   </div>
