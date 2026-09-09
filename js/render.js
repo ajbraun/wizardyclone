@@ -279,6 +279,7 @@ const Render = (() => {
     ["ogre","ogre"], ["troll","troll"], ["minotaur","minotaur"], ["golem","golem"],
     ["stalker","stalker"], ["hound","hound"], ["ghoul","ghoul"], ["marauder","rogue"],
     ["warlock","mage"], ["hexer","mage"], ["mage","mage"], ["cultist","priest"], ["acolyte","priest"], ["priest","priest"],
+    ["spider","spider"], ["beetle","beetle"], ["dragon fly","dragon-fly"], ["dragonfly","dragon-fly"],
     ["drake","drake"], ["salamander","salamander"], ["wyrm","wyrm"],
     ["wight","wight"], ["revenant","revenant"], ["scorpion","scorpion"], ["widow","spider"],
   ];

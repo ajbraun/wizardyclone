@@ -31,6 +31,10 @@ c.assert(g.get('Render.encounterArt({name:"Gruzzik",base:"Iron Ghoul"},8)')==="a
 c.assert(g.get('Render.encounterArt({name:"Feral Ghoul"},8)')==="assets/monsters/ghoul.jpg","ordinary ghouls have their own illustration");
 c.assert(g.get('Render.encounterArt({name:"Death Priest"},8)')==="assets/monsters/priest.jpg","death priests resolve to cleric artwork");
 c.assert(g.get('Render.encounterArt({name:"Venomous Mage"},8)')==="assets/monsters/mage.jpg","venomous mages resolve to spellcaster artwork");
+c.assert(g.get('Render.encounterArt({name:"Huge Spider"},8)')==="assets/monsters/spider.jpg","spiders resolve to spider artwork");
+c.assert(g.get('Render.encounterArt({name:"Boring Beetle"},8)')==="assets/monsters/beetle.jpg","beetles resolve to beetle artwork");
+c.assert(g.get('Render.encounterArt({name:"Dragon Fly"},8)')==="assets/monsters/dragon-fly.jpg","dragon flies resolve to dragonfly artwork");
+c.assert(g.get('Render.encounterArt({id:"WARDEN13",name:"The Magistrate Below"},13)')==="assets/monsters/warden13.jpg","Magistrate has bespoke warden artwork");
 c.assert(!require("fs").readFileSync("assets/monsters/priest.jpg").equals(require("fs").readFileSync("assets/monsters/rogue.jpg")),"priest art is distinct from rogue art");
 c.assert(!require("fs").readFileSync("assets/monsters/mage.jpg").equals(require("fs").readFileSync("assets/monsters/rogue.jpg")),"mage art is distinct from rogue art");
 g.run('Render.monsterBox({id:"D8M0",name:"Dire Hound",art:"beast"},3,{floor:8})');
