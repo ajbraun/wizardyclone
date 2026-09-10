@@ -16,4 +16,9 @@ c.assert(g.get("Game.state === TitleScreen && TitleScreen.confirmed"), "click pr
 g.click("n");
 c.assert(g.get("Game.state === CastleScreen"), "second click confirms new game");
 c.assert(require("fs").readFileSync(require("path").join(__dirname, "..", "index.html"), "utf8").includes('data-key="arrowup"'), "mobile movement controls are present");
+g.run("Game.go(makeCreateScreen())");
+c.assert(g.els.panel.innerHTML.includes('id=\"create-name\"'), "character creation exposes a native name field");
+g.run("Game.state.name = 'Mira'");
+g.click("enter");
+c.assert(g.get("Game.state.step === 'race'"), "touch continue advances character creation");
 c.done();

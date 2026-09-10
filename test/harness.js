@@ -17,7 +17,7 @@ function boot(opts) {
   const sandbox = {
     console, Math, JSON, Array, Object, Set, Map, parseInt, parseFloat, String, Number, RegExp, isFinite,
     document: {
-      getElementById: id => (els[id] = els[id] || { innerHTML: "", textContent: "", getContext: () => ctx2d }),
+      getElementById: id => (els[id] = els[id] || { innerHTML: "", textContent: "", value: "", getContext: () => ctx2d, addEventListener: () => {}, focus: () => {} }),
       addEventListener: (ev, fn) => { listeners.document[ev] = fn; },
     },
     window: { addEventListener: (ev, fn) => { listeners.window[ev] = fn; } },

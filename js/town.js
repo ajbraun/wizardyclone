@@ -356,7 +356,12 @@ function makeCreateScreen() {
     draw() {
       Render.blank("TRAINING GROUNDS");
       if (this.step === "name") {
-        UI.panel(`<h2>CREATE CHARACTER</h2>\nEnter a name, then press ENTER:\n\n> <span class="hi">${esc(this.name)}</span><span class="k">_</span>\n\n<span class="dim">(ESC to cancel)</span>`);
+        UI.panel(`<h2>CREATE CHARACTER</h2>\n<label class="name-entry">Name <input id="create-name" maxlength="12" autocomplete="off" autocapitalize="words" value="${esc(this.name)}" placeholder="e.g. Carl"></label>\n${UI.key("ENTER", "Continue")}  ${UI.key("ESC", "Cancel")}\n\n<span class="dim">Choose a memorable name. The System will mispronounce it later.</span>`);
+        const input = document.getElementById("create-name");
+        if (input) {
+          input.addEventListener("input", () => { this.name = input.value.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 12); });
+          input.focus();
+        }
       } else if (this.step === "race") {
         const rows = Object.keys(RACES).map((r, i) => {
           const b = RACES[r];
@@ -371,7 +376,7 @@ function makeCreateScreen() {
           return `${cur ? '<span class="cursor">' : ""} ${cur ? ">" : " "} ${pad(s, 4)} ${padl(this.stats[s], 2)}${cur ? "</span>" : ""}`;
         }).join("\n");
         const elig = eligibleClasses(this.stats, this.align);
-        UI.panel(`<h2>${esc(this.name)} — ALLOCATE BONUS</h2>\nBonus points left: <span class="k">${this.bonus}</span>\n\n${rows}\n\n<span class="dim">Arrows: move/adjust. ENTER when bonus is 0.</span>\nEligible now: ${elig.join(", ") || "(none)"}`);
+        UI.panel(`<h2>${esc(this.name)} — ALLOCATE BONUS</h2>\nBonus points left: <span class="k">${this.bonus}</span>\n\n${rows}\n\n<span class="mobile-stat-actions">${UI.key("ARROWLEFT", "− Lower")} ${UI.key("ARROWRIGHT", "+ Raise")}</span>\n<span class="dim">Arrows: move/adjust. ENTER when bonus is 0.</span>\nEligible now: ${elig.join(", ") || "(none)"}`);
       } else if (this.step === "class") {
         const elig = eligibleClasses(this.stats, this.align);
         const rows = elig.map((c, i) => UI.key(i + 1, c)).join("\n");
@@ -380,8 +385,8 @@ function makeCreateScreen() {
     },
     key(k, e) {
       if (this.step === "name") {
-        if (e.key === "Escape") { Game.go(TrainingScreen); return; }
-        if (e.key === "Enter" && this.name.length) {
+        if (e.key === "Escape" || k === "esc") { Game.go(TrainingScreen); return; }
+        if ((e.key === "Enter" || k === "enter") && this.name.length) {
           this.step = "race"; this.draw(); return;
         }
         if (e.key === "Backspace") { this.name = this.name.slice(0, -1); this.draw(); return; }
@@ -412,13 +417,13 @@ function makeCreateScreen() {
       }
       if (this.step === "bonus") {
         const s = STATS[this.cursor];
-        if (e.key === "ArrowUp") this.cursor = (this.cursor + 5) % 6;
-        else if (e.key === "ArrowDown") this.cursor = (this.cursor + 1) % 6;
-        else if (e.key === "ArrowRight" || k === "+" || k === "=") {
+        if (e.key === "ArrowUp" || k === "arrowup") this.cursor = (this.cursor + 5) % 6;
+        else if (e.key === "ArrowDown" || k === "arrowdown") this.cursor = (this.cursor + 1) % 6;
+        else if (e.key === "ArrowRight" || k === "arrowright" || k === "+" || k === "=") {
           if (this.bonus > 0 && this.stats[s] < 18) { this.stats[s]++; this.bonus--; }
-        } else if (e.key === "ArrowLeft" || k === "-") {
+        } else if (e.key === "ArrowLeft" || k === "arrowleft" || k === "-") {
           if (this.stats[s] > RACES[this.race][s]) { this.stats[s]--; this.bonus++; }
-        } else if (e.key === "Enter" && this.bonus === 0) {
+        } else if ((e.key === "Enter" || k === "enter") && this.bonus === 0) {
           if (!eligibleClasses(this.stats, this.align).length) { UI.log("No class will take these stats. Re-allocate."); return; }
           this.step = "class";
         }
