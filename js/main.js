@@ -105,6 +105,10 @@ document.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  // Native form fields own their text editing. Without this guard, a name
+  // typed on a phone is applied once by the input and again by the game key
+  // handler.
+  if (e.target && e.target.matches && e.target.matches("input, textarea, select")) return;
   // Let native button activation handle Enter/Space once, via click.
   if (e.target && e.target.closest("button") && ["Enter", " "].includes(e.key)) return;
   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();

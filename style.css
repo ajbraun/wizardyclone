@@ -39,7 +39,8 @@ h2 { color: #f1eee3; font-size: 18px; letter-spacing: 2px; margin-bottom: 8px; f
 .name-entry { display: block; margin: 16px 0; color: var(--muted); font-size: 11px; letter-spacing: 1px; }
 .name-entry input { display: block; width: min(100%, 320px); margin-top: 8px; padding: 12px 13px; border: 1px solid #746344; border-radius: 5px; background: #0b120d; color: #fff2da; font: 16px Menlo, monospace; }
 .name-entry input:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
-.mobile-stat-actions { display: inline-flex; gap: 8px; }
+.mobile-stat-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.mobile-stat-actions .action { border: 1px solid #746344; padding: 7px 9px; background: #d9b97612; }
 .feed, .party-section { margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: #101813; overflow: hidden; }
 .section-label { padding: 13px 18px; border-bottom: 1px solid #2a382e; }
 .section-label .dim { font-size: 9px; letter-spacing: 1px; }

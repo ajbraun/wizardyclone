@@ -360,6 +360,15 @@ function makeCreateScreen() {
         const input = document.getElementById("create-name");
         if (input) {
           input.addEventListener("input", () => { this.name = input.value.replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 12); });
+          // The global keyboard router intentionally ignores form fields so
+          // iOS does not apply each character twice. Keep Return/Escape
+          // useful while the on-screen keyboard has focus.
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === "Escape") {
+              e.preventDefault();
+              this.key(e.key.toLowerCase(), e);
+            }
+          });
           input.focus();
         }
       } else if (this.step === "race") {
@@ -376,7 +385,7 @@ function makeCreateScreen() {
           return `${cur ? '<span class="cursor">' : ""} ${cur ? ">" : " "} ${pad(s, 4)} ${padl(this.stats[s], 2)}${cur ? "</span>" : ""}`;
         }).join("\n");
         const elig = eligibleClasses(this.stats, this.align);
-        UI.panel(`<h2>${esc(this.name)} — ALLOCATE BONUS</h2>\nBonus points left: <span class="k">${this.bonus}</span>\n\n${rows}\n\n<span class="mobile-stat-actions">${UI.key("ARROWLEFT", "− Lower")} ${UI.key("ARROWRIGHT", "+ Raise")}</span>\n<span class="dim">Arrows: move/adjust. ENTER when bonus is 0.</span>\nEligible now: ${elig.join(", ") || "(none)"}`);
+        UI.panel(`<h2>${esc(this.name)} — ALLOCATE BONUS</h2>\nBonus points left: <span class="k">${this.bonus}</span>\n\n${rows}\n\n<span class="mobile-stat-actions">${UI.key("ARROWUP", "↑ Previous stat")} ${UI.key("ARROWDOWN", "↓ Next stat")}<br>${UI.key("ARROWLEFT", "− Lower")} ${UI.key("ARROWRIGHT", "+ Raise")} ${UI.key("ENTER", "Finish")}</span>\n<span class="dim">Use the buttons or arrow keys to choose a stat and adjust it.</span>\nEligible now: ${elig.join(", ") || "(none)"}`);
       } else if (this.step === "class") {
         const elig = eligibleClasses(this.stats, this.align);
         const rows = elig.map((c, i) => UI.key(i + 1, c)).join("\n");
