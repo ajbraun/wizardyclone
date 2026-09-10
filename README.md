@@ -11,6 +11,21 @@ no dependencies. Saves live in your browser's localStorage.
 
 ## The game
 
+- **Chapter one: The Missing Shift** — a level 1 mystery about a missing
+  maintenance crew and a falsified accident report. Meet Mara at (9,17),
+  rescue Pell, recover the ledger, and confront Grusk. Evidence and rescue
+  change his supporters; three report outcomes offer different rewards.
+  The optional chapter works with existing saves and never locks the stairs.
+- **First-floor tactics and treasure** — bellringers summon limited help,
+  chirurgeons heal allies, hounds pounce on the back row, and lamp slimes flare.
+  Six new named items come from chapter choices, including a dressing that
+  heals on your first Parry and a blade that interrupts a pending attack once
+  per battle. New enemies use matching existing species illustrations.
+- **Quest journal** — click J in the castle, maze, or camp for your next
+  objective and location hints. Discovered story locations show ! on the map.
+  Dialogue, combat targeting, equipment selection, and combat continuation
+  have touch buttons.
+
 - **Classic core** — 5 races, 8 classes (roll a Ninja, we dare you), mage &
   priest spellbooks (HALITO, KATINO, DIOS...), a party of six, first-person
   textured stone maze, turn-based group combat, chests with traps, and a Temple

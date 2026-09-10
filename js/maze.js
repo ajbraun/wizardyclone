@@ -40,10 +40,12 @@ const MazeScreen = {
     markSeen(m.level, m.x, m.y);
     Render.draw(map, m.x, m.y, m.f, m.light > 0 ? 4 : 3);
     const st = streakCount();
-    UI.viewLabel(`MAZE  LEVEL ${m.level}${map.mod ? `  [${map.mod.name}]` : ""}${st ? `  STREAK+${Math.min(10, st) * 10}%` : ""}  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
+    UI.viewLabel(`MAZE  LEVEL ${m.level}${map.mod ? `  [${map.mod.name}]` : ""}${st ? `  STREAK+${Math.min(10, st) * 10}%` : ""}  (${m.x}, ${m.y})  FACING ${DIRNAMES[m.f]}${m.light > 0 ? "  *LIGHT*" : ""}`);
     const spc = map.specials[m.x + "," + m.y];
     let prompt = "";
-    if (spc && spc.t === "up") {
+    if (spc && spc.t === "story") {
+      prompt = `\n<span class="gold">${esc(SHIFT_SITES[spc.site].title)}</span>\n${UI.key("ENTER", "Investigate / talk")}`;
+    } else if (spc && spc.t === "up") {
       prompt = m.level === 1
         ? `\n<span class="k">Stairs UP to the castle. Press ENTER to leave the maze.</span>`
         : `\n<span class="k">Stairs UP. Press ENTER to climb.</span>`;
@@ -68,7 +70,8 @@ const MazeScreen = {
     } else if (spc && spc.t === "amulet" && Game.flags.boss && !Game.flags.won) {
       prompt = `\n<span class="gold">A jeweled AMULET rests on a pedestal! Press ENTER to take it.</span>`;
     }
-    UI.panel(`<h2>THE MAZE</h2>\n<span class="dim">ARROWS/WASD move   M) Map   C) Camp</span>${prompt}`);
+    const chapter = m.level === 1 ? `\n\n<span class="eyebrow">THE MISSING SHIFT</span>\n${esc(Story.objective())}` : "";
+    UI.panel(`<h2>THE MAZE</h2>\n<span class="dim">ARROWS/WASD move   M) Map   C) Camp</span>${prompt}${chapter}\n\n${UI.key("J", "Quest journal")}`);
   },
   key(k, e) {
     const m = Game.maze;
@@ -79,6 +82,7 @@ const MazeScreen = {
     else if (k === "arrowdown" || k === "s") { m.f = (m.f + 2) % 4; this.draw(); }
     else if (k === "c") Game.go(CampScreen);
     else if (k === "m") Game.go(MapScreen);
+    else if (k === "j") Story.journal(MazeScreen);
     else if (k === "t") {
       const spc = map.specials[m.x + "," + m.y];
       if (spc && spc.t === "sanctum") {
@@ -95,10 +99,12 @@ const MazeScreen = {
         Game.go(CastleScreen);
       }
     }
-    else if (e.key === "Enter") {
+    else if (e.key === "Enter" || k === "enter") {
       const spc = map.specials[m.x + "," + m.y];
       if (!spc) return;
-      if (spc.t === "up") {
+      if (spc.t === "story") {
+        Story.open(spc.site);
+      } else if (spc.t === "up") {
         if (m.level === 1) {
           Game.maze = null;
           UI.log("Your party emerges into the daylight of the castle.");
@@ -235,6 +241,11 @@ const MazeScreen = {
     const key = m.x + "," + m.y;
     const spc = map.specials[key];
     if (spc) {
+      // Authored conversations are safe spaces, including on return visits.
+      if (spc.t === "story") {
+        if (!(Story.state().visited || {})[spc.site]) Story.open(spc.site);
+        return;
+      }
       if (spc.t === "msg") UI.log(spc.msg);
       else if (spc.t === "lair") {
         const flagKey = "lair" + m.level + "_" + key;
@@ -305,8 +316,8 @@ const MapScreen = {
       return;
     }
     Render.drawMap(map, Game.seen[m.level] || {}, m.x, m.y, m.f);
-    UI.viewLabel(`MAP  LEVEL ${m.level}`);
-    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}${map.band ? ` — ${esc(map.band.toUpperCase())}` : ""}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; up   &gt; down   S sanctum   + shrine   $ kiosk   V vault   † remains</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
+    UI.viewLabel(`MAP  LEVEL ${m.level}  POSITION (${m.x}, ${m.y})`);
+    UI.panel(`<h2>AUTOMAP — LEVEL ${m.level}${map.band ? ` — ${esc(map.band.toUpperCase())}` : ""}</h2>\n<span class="dim">Only where you've walked. The rest is the dark's business.\n\n^ you   &lt; up   &gt; down   S sanctum   + shrine   $ kiosk   V vault   † remains   ! story</span>\n\n${UI.key("M", "Close map")}  ${UI.key("L", "Close map")}`);
   },
   key(k, e) {
     if (k === "m" || k === "l" || e.key === "Escape") Game.go(MazeScreen);
@@ -353,9 +364,9 @@ const CampScreen = {
   draw() {
     UI.viewLabel("CAMP");
     if (this.mode === "menu") {
-      UI.panel(`<h2>CAMP</h2>\n${UI.key("C", "Cast a spell")}\n${UI.key("I", "Inspect a member (1-" + Game.party.length + " after pressing I)")}\n${UI.key("R", "Reorder party")}\n${UI.key("S", "The System")}\n${UI.key("Q", "Save & quit (resume here later)")}\n${UI.key("L", "Break camp")}`);
+      UI.panel(`<h2>CAMP</h2>\n${UI.key("C", "Cast a spell")}\n${UI.key("I", "Inspect a member (1-" + Game.party.length + " after pressing I)")}\n${UI.key("R", "Reorder party")}\n${UI.key("S", "The System")}\n${UI.key("J", "Quest journal")}\n${UI.key("Q", "Save & quit (resume here later)")}\n${UI.key("L", "Break camp")}`);
     } else if (this.mode === "who" || this.mode === "inspect") {
-      UI.panel(`<h2>${this.mode === "who" ? "WHO CASTS?" : "INSPECT WHO?"}</h2>\n<span class="dim">Press member number 1-${Game.party.length}</span>\n\n${UI.key("L", "Back")}`);
+      UI.panel(`<h2>${this.mode === "who" ? "WHO CASTS?" : "INSPECT WHO?"}</h2>\n${Game.party.map((ch, i) => UI.key(i + 1, esc(ch.name))).join("\n")}\n\n${UI.key("L", "Back")}`);
     } else if (this.mode === "spell") {
       const ch = this.caster;
       const list = campSpells(ch);
@@ -367,7 +378,7 @@ const CampScreen = {
       }).join("\n") || '<span class="dim">(no camp spells known)</span>';
       UI.panel(`<h2>${esc(ch.name)} CASTS...</h2>\n${rows}\n\n${UI.key("L", "Back")}`);
     } else if (this.mode === "target") {
-      UI.panel(`<h2>${this.spell} ON WHOM?</h2>\n<span class="dim">Press member number 1-${Game.party.length}</span>\n\n${UI.key("L", "Back")}`);
+      UI.panel(`<h2>${this.spell} ON WHOM?</h2>\n${Game.party.map((ch, i) => UI.key(i + 1, esc(ch.name))).join("\n")}\n\n${UI.key("L", "Back")}`);
     } else if (this.mode === "reorder") {
       UI.panel(`<h2>REORDER</h2>\nPress member numbers in the new order.\nChosen: ${this.order.map(c => esc(c.name)).join(", ") || "(none)"}\n\n${UI.key("L", "Cancel")}`);
     }
@@ -378,6 +389,7 @@ const CampScreen = {
       else if (k === "i") { this.mode = "inspect"; this.draw(); }
       else if (k === "r") { this.mode = "reorder"; this.order = []; this.draw(); }
       else if (k === "s") { openSystem(CampScreen); }
+      else if (k === "j") Story.journal(CampScreen);
       else if (k === "q") { Game.save(); UI.log("The party makes camp. Game saved."); Game.go(TitleScreen); }
       else if (k === "l") Game.go(MazeScreen);
       return;

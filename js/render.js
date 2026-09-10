@@ -245,7 +245,7 @@ const Render = (() => {
         if (w[2]) seg(cx, cy + s, cx + s, cy + s, w[2] === 2);
         if (w[3]) seg(cx, cy, cx, cy + s, w[3] === 2);
         const spc = map.specials[x + "," + y];
-        const mark = spc && { up: "<", down: ">", sanctum: "S", shrine: "+", kiosk: "$", vault: "V", remains: "†" }[spc.t];
+        const mark = spc && { up: "<", down: ">", sanctum: "S", shrine: "+", kiosk: "$", vault: "V", remains: "†", story: "!" }[spc.t];
         if (mark) {
           ctx.fillStyle = "#ffd700";
           ctx.font = "12px Menlo, monospace";
@@ -285,7 +285,8 @@ const Render = (() => {
   ];
   function encounterArt(def) {
     let name;
-    if (def.id === "WARDEN8") name = "mother-of-thousands";
+    if (def.scene) name = def.scene;
+    else if (def.id === "WARDEN8") name = "mother-of-thousands";
     else if (/^WARDEN(13|18|23|28|33)$/.test(def.id || "")) name = def.id.toLowerCase();
     else name = CAMPAIGN_SCENES[def.id];
     if (!name) {

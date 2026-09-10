@@ -41,6 +41,14 @@ h2 { color: #f1eee3; font-size: 18px; letter-spacing: 2px; margin-bottom: 8px; f
 .name-entry input:focus { outline: 2px solid var(--gold); outline-offset: 2px; }
 .mobile-stat-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .mobile-stat-actions .action { border: 1px solid #746344; padding: 7px 9px; background: #d9b97612; }
+.story-scene { white-space: normal; }
+.story-scene h2 { margin: 12px 0 16px; font: normal 26px/1.2 Georgia, serif; letter-spacing: 0; }
+.story-scene p { margin: 12px 0; }
+.story-scene ul { margin: 14px 0; padding-left: 20px; }
+.story-scene li { margin: 8px 0; }
+.story-choices { display: grid; gap: 8px; margin-top: 20px; }
+.story-choices .action { width: 100%; min-height: 48px; padding: 10px; border-color: #746344; background: #d9b97612; white-space: normal; touch-action: manipulation; }
+@media (max-width: 800px) { #viewwrap { flex-direction: column; } #touch-controls { width: 100%; } }
 .feed, .party-section { margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; background: #101813; overflow: hidden; }
 .section-label { padding: 13px 18px; border-bottom: 1px solid #2a382e; }
 .section-label .dim { font-size: 9px; letter-spacing: 1px; }

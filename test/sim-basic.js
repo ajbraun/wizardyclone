@@ -92,6 +92,7 @@ const MazeScreen = get("MazeScreen"), CombatScreen = get("CombatScreen");
 const Game = get("Game");
 for (let steps = 0; steps < 3000 && Game.maze; steps++) {
   const st = Game.state;
+  if (st === get("StoryScreen")) { press("l"); continue; }
   if (st === CombatScreen) {
     const C = get("Combat");
     if (C.phase === "msg") { press(" "); continue; }

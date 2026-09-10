@@ -33,7 +33,7 @@ const CastleScreen = {
     if (Game.flags.won) {
       extra = `\n<span class="gold">*** The Amulet has been returned! The realm is saved. ***</span>\n<span class="dim">(You may keep adventuring for glory.)</span>\n`;
     }
-    UI.panel(`<h2>CASTLE</h2>${extra}\n${UI.key("G", "Gilgamesh's Tavern")}\n${UI.key("A", "Adventurer's Inn")}\n${UI.key("B", "Boltac's Trading Post")}\n${UI.key("T", "Temple of Cant")}\n${UI.key("S", "The System")}\n${UI.key("E", "Edge of Town")}`);
+    UI.panel(`<h2>CASTLE</h2>${extra}\n${UI.key("G", "Gilgamesh's Tavern")}\n${UI.key("A", "Adventurer's Inn")}\n${UI.key("B", "Boltac's Trading Post")}\n${UI.key("T", "Temple of Cant")}\n${UI.key("S", "The System")}\n${UI.key("E", "Edge of Town")}\n${UI.key("J", "Quest journal — The Missing Shift")}`);
   },
   key(k) {
     if (k === "g") Game.go(TavernScreen);
@@ -42,6 +42,7 @@ const CastleScreen = {
     else if (k === "t") Game.go(TempleScreen);
     else if (k === "s") openSystem(CastleScreen);
     else if (k === "e") Game.go(EdgeScreen);
+    else if (k === "j") Story.journal(CastleScreen);
   },
 };
 
@@ -222,10 +223,13 @@ function inspectScreen(ch, backFn) {
       else if (this.mode === "trade") extra = `\n<span class="k">Press an item's letter to give away.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "detailPick") extra = `\n<span class="k">Press an item's letter for its full stats.</span> ${UI.key("L", "Done")}`;
       else if (this.mode === "tradeTo") {
-        const names = this.tradePool().map((p, i) => `${LETTERS[i]}=${esc(p.name)}`).join("  ");
+        const names = this.tradePool().map((p, i) => UI.key(LETTERS[i], esc(p.name))).join("\n");
         extra = `\n<span class="k">Give the ${esc(IT(ch.items[this.tradeIdx]).name)} to whom?</span>\n${names}\n${UI.key("L", "Cancel")}`;
       }
       else extra = `\n${UI.key("E", "Equip")}  ${UI.key("T", "Trade item")}  ${UI.key("D", "Drop item")}  ${UI.key("U", "Use potion")}  ${UI.key("I", "Item details")}  ${UI.key("L", "Leave")}`;
+      if (["equip", "drop", "use", "trade", "detailPick"].includes(this.mode)) {
+        extra += "\n" + ch.items.map((it, i) => UI.key(LETTERS[i], `${it.eq ? "Equipped: " : ""}${esc(IT(it).name)}`)).join("\n");
+      }
       UI.panel(UI.charSheet(ch) + "\n" + extra);
     },
     key(k) {

@@ -42,6 +42,7 @@ const SPELLS = get("SPELLS");
 let chests = 0, victories = 0;
 for (let steps = 0; steps < 12000 && Game.maze; steps++) {
   const st = Game.state;
+  if (st === get("StoryScreen")) { press("l"); continue; }
   if (st === CombatScreen) {
     const C = get("Combat");
     if (C.phase === "msg") { if (C.endTo === "victory") victories++; press(" "); continue; }

@@ -10,6 +10,7 @@ function monsterCard(def) {
   if (def.breath) traits.push("breathes fire (worse at full health)");
   if (def.mage) traits.push(`casts mage spells (rank ${def.mage})`);
   if (def.priest) traits.push(`casts priest spells (rank ${def.priest})`);
+  if (def.tactic) traits.push({ rally: "calls limited reinforcements", mend: "heals wounded allies", pounce: "telegraphed back-row pounce", flare: "telegraphed party-wide flare", slam: "telegraphed heavy blow" }[def.tactic]);
   const kills = Game.counters["kill:" + def.id] || 0;
   const alive = Game.party.filter(isUp);
   const avg = alive.length ? alive.reduce((a, c) => a + c.level, 0) / alive.length : 1;
@@ -51,7 +52,10 @@ const Combat = {
     this.opts = opts || {};
     const map = getLevel(Game.maze.level);
     this.groups = [];
-    if (this.opts.boss) {
+    this.reinforcements = 0;
+    if (this.opts.encounter) {
+      for (const [id, count] of this.opts.encounter) this.addGroup(id, count);
+    } else if (this.opts.boss) {
       this.addGroup("APPRENTICE", 1);
       this.addGroup("MAGE5", d(2));
     } else if (this.opts.warden) {
@@ -71,6 +75,7 @@ const Combat = {
       if (pct(eliteChance)) this.addElite(map);
     }
     for (const ch of Game.party) { ch.tempAC = 0; ch.asleep = false; ch.parry = false; }
+    this.guardHealed = new Set(); this.itemInterrupted = new Set();
     this.round = 0; this.xpTotal = 0; this.msgs = []; this.intentRound = -1;
     const names = this.groups.map(g => this.groupLabel(g)).join(" and ");
     UI.log(`You encounter ${names}!`);
@@ -79,7 +84,7 @@ const Combat = {
     }
     Events.emit("encounter", { groups: this.groups.map(g => g.def), boss: !!this.opts.boss, lair: !!this.opts.lair, level: Game.maze.level });
     this.surprised = false; this.surprising = false;
-    if (!this.opts.boss && !this.opts.vault && !this.opts.warden) {
+    if (!this.opts.boss && !this.opts.vault && !this.opts.warden && !this.opts.story) {
       const r = rnd(100);
       if (r < 15) { this.surprising = true; UI.log("You surprise them!"); }
       else if (r < 25) { this.surprised = true; UI.log("You are surprised!"); }
@@ -94,7 +99,7 @@ const Combat = {
     const n = count || dice(def.num);
     this.groups.push({
       def, silenced: false, acMod: 0,
-      members: Array.from({ length: n }, () => ({ hp: dice(def.hp), asleep: false, para: false })),
+      members: Array.from({ length: n }, () => { const hp = dice(def.hp); return { hp, maxhp: hp, asleep: false, para: false }; }),
     });
   },
   addElite(map) {
@@ -136,7 +141,19 @@ const Combat = {
       g.intent = null; g.intentDone = false;
       if (!this.aliveIn(g).length) continue;
       const def = g.def;
-      if (def.breath && pct(45)) {
+      if (def.tactic && this.round % 2 === 0) {
+        const vocal = ["rally", "mend"].includes(def.tactic);
+        if (vocal && g.silenced) continue;
+        if (def.tactic === "rally" && (this.reinforcements >= 2 || this.groups.length >= 5)) continue;
+        const info = {
+          rally: ["RAISING THE BELL", "calls one kobold. Sleep or silence the bellringer to stop it."],
+          mend: ["PREPARING STITCHES", "will heal a wounded ally for 3 HP. Interrupt the chant."],
+          pounce: ["CROUCHING TO LEAP", "will pounce on the back row for 1–4 damage. Parry halves it."],
+          flare: ["SWELLING WITH LIGHT", "will flare for 2 damage to everyone. Parry halves it."],
+          slam: ["DRAWING BACK HAMMER", "will strike the front row for 6 damage. Parry halves it."],
+        }[def.tactic];
+        g.intent = { kind: def.tactic, label: info[0], warn: `${def.name} ${info[1]}` };
+      } else if (def.breath && pct(45)) {
         g.intent = { kind: "breath", label: "INHALING", warn: `The ${def.name} inhales deeply.` };
       } else if ((def.mage || def.priest) && !g.silenced && pct(55)) {
         if (def.mage >= 3 && pct(60)) g.intent = { kind: "mahalito", label: "WEAVING FIRE", warn: `A ${def.name} begins weaving fire between its hands.` };
@@ -174,7 +191,7 @@ const Combat = {
       });
     }
     if (this.phase === "msg") {
-      UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n<span class="k">[ SPACE ]</span>`);
+      UI.panel(`<h2>COMBAT — ROUND ${this.round}</h2>\n${this.msgs.map(esc).join("\n")}\n\n${UI.key("ENTER", "Continue")}`);
       return;
     }
     if (this.phase === "chest") { this.drawChest(); return; }
@@ -198,12 +215,14 @@ const Combat = {
         `${UI.key("P", "Parry")}  ${UI.key("S", "Spell")}  ${UI.key("U", "Use potion")}  ${UI.key("I", "Inspect foe")}  ${UI.key("R", "Run")}  ${UI.key("T", "Take back")}`;
     } else if (this.sub === "inspectGroup") {
       prompt = `Inspect which group? <span class="k">(1-${this.groups.length})</span>  ${UI.key("L", "Back")}`;
+      prompt += "\n" + this.groups.map((g, i) => UI.key(i + 1, esc(this.groupLabel(g)))).join("\n");
     } else if (this.sub === "card") {
       UI.panel(monsterCard(this.inspectG.def) + `\n\n${UI.key("L", "Back")}`);
       return;
     } else if (this.sub === "fightGroup") {
       const nums = this.meleeGroups().map(g => this.groups.indexOf(g) + 1);
       prompt = `<span class="hi">${esc(ch.name)}</span> fights which group? <span class="k">(${nums.join(", ")} in melee reach)</span>`;
+      prompt += "\n" + nums.map(n => UI.key(n, esc(this.groupLabel(this.groups[n - 1])))).join("\n");
     } else if (this.sub === "spell") {
       const list = this.combatSpells(ch);
       prompt = `<span class="hi">${esc(ch.name)}</span> casts...\n` + (list.map((s, i) => {
@@ -214,8 +233,10 @@ const Combat = {
       }).join("\n") || '<span class="dim">(no combat spells)</span>') + `\n${UI.key("L", "Back")}`;
     } else if (this.sub === "spellGroup") {
       prompt = `${this.pendingSpell} at which group? <span class="k">(1-${this.groups.length})</span>`;
+      prompt += "\n" + this.groups.map((g, i) => this.aliveIn(g).length ? UI.key(i + 1, esc(this.groupLabel(g))) : "").join("\n");
     } else if (this.sub === "spellAlly" || this.sub === "potionAlly") {
       prompt = `On which member? <span class="k">(1-${Game.party.length})</span>`;
+      prompt += "\n" + Game.party.map((p, i) => UI.key(i + 1, esc(p.name))).join("\n");
     } else if (this.sub === "potion") {
       const pots = this.potions(ch);
       prompt = `Drink which?\n` + (pots.map((o, i) => UI.key(LETTERS[i], ITEMS[o.it.id].name)).join("\n") || '<span class="dim">(no potions)</span>') + `\n${UI.key("L", "Back")}`;
@@ -225,7 +246,7 @@ const Combat = {
 
   key(k, e) {
     if (this.phase === "msg") {
-      if (k === " " || e.key === "Enter" || e.key === " ") this.afterMsgs();
+      if (k === " " || k === "enter" || e.key === "Enter" || e.key === " ") this.afterMsgs();
       return;
     }
     if (this.phase === "chest") { this.chestKey(k, e); return; }
@@ -370,10 +391,10 @@ const Combat = {
         if (!g.intent || g.intentDone) continue;
         const alive = this.aliveIn(g);
         if (!alive.length) {
-          this.say(`The ${g.def.name} dies with its ${g.intent.kind === "breath" ? "breath still gathered" : "spell unfinished"}.`);
+          this.say(g.def.tactic ? `The ${g.def.name} dies before its announced attack.` : `The ${g.def.name} dies with its ${g.intent.kind === "breath" ? "breath still gathered" : "spell unfinished"}.`);
           Events.emit("interrupt", { monster: g.def, how: "killed" });
         } else if (alive.every(mm => mm.asleep || mm.para)) {
-          this.say(`The ${g.def.name} sleeps through its own ${g.intent.kind === "breath" ? "inhale" : "incantation"}.`);
+          this.say(`The ${g.def.name} cannot carry out its announced attack.`);
           Events.emit("interrupt", { monster: g.def, how: "incapacitated" });
         }
       }
@@ -417,7 +438,16 @@ const Combat = {
 
   partyAct(a) {
     const ch = a.ch;
-    if (a.type === "parry") return;
+    if (a.type === "parry") {
+      this.guardHealed = this.guardHealed || new Set();
+      const dressing = ch.items.find(it => it.eq && IT(it).guardHeal);
+      if (dressing && !this.guardHealed.has(ch.id)) {
+        this.guardHealed.add(ch.id);
+        const healed = applyHeal(ch, IT(dressing).guardHeal, { type: "item" });
+        this.say(`${ch.name} braces with ${IT(dressing).name} and recovers ${healed} HP.`);
+      }
+      return;
+    }
     if (a.type === "potion") {
       const idx = ch.items.findIndex(it => it.id === a.itemId);
       if (idx >= 0) { this.say(`${ch.name} drinks a ${ITEMS[a.itemId].name}.`); this.potionEffect(ch, a.ally, idx); }
@@ -446,6 +476,14 @@ const Combat = {
         if (chance(critChance(ch, ctx) / 100)) { crit = true; crits++; dmg *= 2; }
         if (ch.cls === "Ninja" && pct(2 * ch.level)) { dmg = mm.hp; this.say(`${ch.name} decapitates one!`); }
         mm.hp -= dmg; hits++; dmgTotal += dmg;
+        this.itemInterrupted = this.itemInterrupted || new Set();
+        const weapon = equipped(ch, "weapon");
+        if (weapon && weapon.interruptHit && g.intent && !g.intentDone && !this.itemInterrupted.has(ch.id)) {
+          this.itemInterrupted.add(ch.id);
+          g.intentDone = true;
+          this.say(`${weapon.name} interrupts ${g.def.name}'s announced attack!`);
+          Events.emit("interrupt", { monster: g.def, how: "item" });
+        }
         if (mm.asleep && pct(50)) mm.asleep = false;
         if (mm.hp <= 0) {
           mm.hp = 0; kills++; slain = true;
@@ -554,12 +592,33 @@ const Combat = {
     if (g.intent && !g.intentDone) {
       const intent = g.intent;
       g.intentDone = true;
-      if (intent.kind !== "breath" && g.silenced) {
+      if (["mahalito", "katino", "bolt", "rally", "mend"].includes(intent.kind) && g.silenced) {
         this.say(`The ${def.name}'s spell dies unspoken. Silence is golden.`);
         Events.emit("interrupt", { monster: def, how: "silence" });
         return;
       }
-      if (intent.kind === "breath") {
+      if (intent.kind === "rally") {
+        if ((this.reinforcements || 0) < 2 && this.groups.length < 5) {
+          this.addGroup("KOBOLD", 1);
+          this.reinforcements = (this.reinforcements || 0) + 1;
+          this.say("The bell rings. One kobold arrives; it can act next round.");
+        }
+      } else if (intent.kind === "mend") {
+        const wounded = this.groups.flatMap(gg => this.aliveIn(gg)).filter(m => m.hp < m.maxhp).sort((a, b) => a.hp - b.hp);
+        if (wounded.length) {
+          const target = wounded[0], amt = Math.min(3, target.maxhp - target.hp);
+          target.hp += amt;
+          this.say(`${def.name} stitches an ally for ${amt} HP.`);
+        } else this.say(`${def.name} checks the bandages. Nobody needs healing.`);
+      } else if (["pounce", "flare", "slam"].includes(intent.kind)) {
+        const back = Game.party.slice(3).filter(isUp);
+        const targets = intent.kind === "flare" ? anyUp : [pick(intent.kind === "pounce" && back.length ? back : targetPool)];
+        for (const t of targets) {
+          let dmg = intent.kind === "flare" ? 2 : intent.kind === "slam" ? 6 : d(4);
+          if (t.parry) dmg = Math.ceil(dmg / 2);
+          this.hurt(t, dmg, `takes ${dmg} from ${def.name}'s ${intent.kind}${t.parry ? " (braced)" : ""}`, { type: "melee", monster: def });
+        }
+      } else if (intent.kind === "breath") {
         this.say(`The ${def.name} breathes fire!`);
         for (const ch of anyUp) {
           let dmg = Math.max(1, Math.ceil(mm.hp / 2));
@@ -632,6 +691,10 @@ const Combat = {
     }
     Events.emit("victory", { xp: this.xpTotal, gold, boss: !!this.opts.boss, lair: !!this.opts.lair, rounds: this.round, level: Game.maze.level, encLvl });
     this.msgs = [`VICTORY!`, `Spoils: ${share} XP each${anyScaled ? " (reduced — these were beneath you)" : ""} and ${gshare} gold.`];
+    if (this.opts.story === "missingShift") {
+      Story.victory();
+      this.msgs.push("Grusk's shift is over. Return to Mara near the entrance for your chosen reward.");
+    }
     for (const g of this.groups) if (g.elite) this.msgs.push(`[SYSTEM] ${g.def.name} has been removed from the payroll.`);
     if (this.opts.warden && !Game.flags["warden" + this.opts.warden]) {
       Game.flags["warden" + this.opts.warden] = true;

@@ -80,6 +80,7 @@ function itemCard(entry, ch) {
   const lines = [];
   lines.push(`<span class="hi">${esc(st.name)}</span>  <span class="dim">[${st.slot}]</span>`);
   if (base.unique) lines.push(`<span class="gold">UNIQUE</span> — <span class="dim">"${esc(base.lore)}"</span>`);
+  if (base.effect) lines.push(`EFFECT     ${esc(base.effect)}`);
   lines.push("");
   if (st.dmg) lines.push(`DAMAGE     ${st.dmg}${st.dmg !== base.dmg ? `  <span class="dim">(base ${base.dmg})</span>` : ""}`);
   if (st.ac) lines.push(`ARMOR      +${st.ac} AC${st.ac !== (base.ac || 0) ? `  <span class="dim">(base +${base.ac || 0})</span>` : ""}`);
